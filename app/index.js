@@ -6,7 +6,7 @@ var util   = require('util')
   , fs     = require('fs')
   , yeoman = require('yeoman-generator')
   , rimraf = require('rimraf')
-  , mysql = require('mysql')
+  , db = require('mysql-native').createTCPClient()
   , exec   = require('child_process').exec
   , config = require('./../config.js')
   , automaton = require('automaton').create()
@@ -23,33 +23,36 @@ function Generator() {
 util.inherits(Generator, yeoman.generators.NamedBase)
 
 // build database
-Generator.prototype.createDatabase = function createDatabase() {
-  var cb = this.async()
-    , self = this
-    , connection = mysql.createConnection({
-    host     : 'localhost',
-    user     : 'root',
-    password : 'root',
-  });
+// Generator.prototype.createDatabase = function createDatabase() {
+//   var cb = this.async()
+//     , self = this
 
-  connection.connect(function(err) {
-    if (err) {
-      self.log.writeln('Error connecting to database, please create the table manually')
-      cb()
-    }
 
-    self.log.writeln('')
-    self.log.writeln('Connected to MySQL')
-    connection.query('CREATE DATABASE ?', ['test'], function(err, result) {
-      if (err) {
-        self.log.writeln('Could not create database')
-        cb()
-      }
+//   db.auth('root', '')
+//   //   ,  = mysql.createConnection({
+//   //   host     : 'localhost',
+//   //   user     : 'root',
+//   //   password : 'root',
+//   // });
 
-      self.log.writeln('Databse created')
-    })
-  });
-}
+//   // connection.connect(function(err) {
+//   //   if (err) {
+//   //     self.log.writeln('Error connecting to database, please create the table manually')
+//   //     cb()
+//   //   }
+
+//   //   self.log.writeln('')
+//   //   self.log.writeln('Connected to MySQL')
+//   //   connection.query('CREATE DATABASE ?', ['test'], function(err, result) {
+//   //     if (err) {
+//   //       self.log.writeln('Could not create database')
+//   //       cb()
+//   //     }
+
+//   //     self.log.writeln('Databse created')
+//   //   })
+//   // });
+// }
 
 // get the latest stable version of Wordpress
 Generator.prototype.getVersion = function getVersion() {
@@ -288,7 +291,7 @@ Generator.prototype.askFor = function askFor() {
     }
   })
 }
-/*
+
 // download the framework and unzip it in the project app/
 Generator.prototype.createApp = function createApp(cb) {
   var cb   = this.async()
@@ -325,7 +328,7 @@ Generator.prototype.createTheme = function createTheme() {
     self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
   })
 }
-*/
+
 // grab bootstrap
 Generator.prototype.createBootstrap = function createBootstrap() {
   var cb   = this.async()
@@ -509,7 +512,7 @@ Generator.prototype.configureGrunt = function configureGrunt() {
   self.log.writeln('')
   self.log.writeln('Configuring Grunt')
   
-  self.installDependencies()
+  //self.installDependencies()
 
   cb()
 }
