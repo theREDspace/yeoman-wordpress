@@ -293,41 +293,41 @@ Generator.prototype.askFor = function askFor() {
 }
 
 // download the framework and unzip it in the project app/
-Generator.prototype.createApp = function createApp(cb) {
-  var cb   = this.async()
-    , self = this 
+// Generator.prototype.createApp = function createApp(cb) {
+//   var cb   = this.async()
+//     , self = this 
 
-  this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
-  this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
-}
+//   this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
+//   this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
+// }
 
-// remove the basic theme and create a new one
-Generator.prototype.createTheme = function createTheme() {
-  var cb   = this.async()
-    , self = this
+// // remove the basic theme and create a new one
+// Generator.prototype.createTheme = function createTheme() {
+//   var cb   = this.async()
+//     , self = this
 
-  this.log.writeln('Removing default themes')
-  // remove the existing themes
-  fs.readdir('app/wp-content/themes', function(err, files) {
-    if (typeof files != 'undefined' && files.length != 0) {
-      files.forEach(function(file) {
-        var pathFile = fs.realpathSync('app/wp-content/themes/'+file)
-          , isDirectory = fs.statSync(pathFile).isDirectory()
+//   this.log.writeln('Removing default themes')
+//   // remove the existing themes
+//   fs.readdir('app/wp-content/themes', function(err, files) {
+//     if (typeof files != 'undefined' && files.length != 0) {
+//       files.forEach(function(file) {
+//         var pathFile = fs.realpathSync('app/wp-content/themes/'+file)
+//           , isDirectory = fs.statSync(pathFile).isDirectory()
 
-        if (isDirectory) {
-          rimraf.sync(pathFile)
-          self.log.writeln('Removing ' + pathFile)
-        }
-      })
-    }
+//         if (isDirectory) {
+//           rimraf.sync(pathFile)
+//           self.log.writeln('Removing ' + pathFile)
+//         }
+//       })
+//     }
 
-    self.log.writeln('')
-    self.log.writeln('Downloading the starter theme')
+//     self.log.writeln('')
+//     self.log.writeln('Downloading the starter theme')
 
-    // create the theme
-    self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
-  })
-}
+//     // create the theme
+//     self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
+//   })
+// }
 
 // grab bootstrap
 Generator.prototype.createBootstrap = function createBootstrap() {
