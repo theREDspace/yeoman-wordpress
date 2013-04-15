@@ -7,58 +7,31 @@ module.exports = function( grunt ) {
   //
   grunt.initConfig({
 
-    // Project configuration
-    // ---------------------
-
-    // specify an alternate install location for Bower
-    bower: {
-      dir: 'app/scripts/vendor'
-    },
-
-    // Coffee to JS compilation
-    coffee: {
-      dist: {
-        src: 'app/wp-content/themes/<%= themeName %>/js/*.coffee',
-        dest: 'app/wp-content/themes/<%= themeName %>/js/*.js'
-      }
-    },
-
-    // compile .scss/.sass to .css using Compass
-    compass: {
-      dist: {
-        // http://compass-style.org/help/tutorials/configuration-reference/#configuration-properties
+    less: {
+      development: {
         options: {
-          css_dir: 'app/wp-content/themes/<%= themeName %>',
-          sass_dir: 'app/wp-content/themes/<%= themeName %>',
-          images_dir: 'app/wp-content/themes/<%= themeName %>/images',
-          javascripts_dir: 'app/wp-content/themes/<%= themeName %>/js',
-          force: true
-        }
+          paths: 'src/less/include'
+        },
+        files: [{
+          expand: true,
+          cwd: 'src/less/',
+          src: ['**/*.less', '!**/bootstrap.*.less'],
+          dest: 'app/wp-content/themes/<%= themeName %>/',
+          ext: '.css'
+        }]
       }
-    },
-
-    // generate application cache manifest
-    manifest:{
-      dest: ''
-    },
-
-    // headless testing through PhantomJS
-    mocha: {
-      all: ['test/**/*.html']
     },
 
     // default watch configuration
     watch: {
-      coffee: {
-        files: '<config:coffee.dist.src>',
-        tasks: 'coffee reload'
+      less: {
+        files: 'src/less/**/*.less',
+        tasks: 'less:development',
+        options: {
+          interrupt: true
+        }
       },
-      compass: {
-        files: [
-          'app/wp-content/themes/<%= themeName %>/*.{scss,sass}'
-        ],
-        tasks: 'compass reload'
-      },
+
       reload: {
         files: [
           'app/wp-content/themes/<%= themeName %>/*.php',
@@ -155,6 +128,7 @@ module.exports = function( grunt ) {
       dist: '<config:rev.img>'
     },
 
+    /*
     // rjs configuration. You don't necessarily need to specify the typical
     // `path` configuration, the rjs task will parse these values from your
     // main module, using http://requirejs.org/docs/optimization.html#mainConfigFile
@@ -171,7 +145,8 @@ module.exports = function( grunt ) {
       name: 'main',
       out: 'wp-content/themes/<%= themeName %>/js/script.js'
     },
-
+    */
+    
     // While Yeoman handles concat/min when using
     // usemin blocks, you can still use them manually
     concat: {
@@ -189,8 +164,11 @@ module.exports = function( grunt ) {
     }
 
   });
+  
+  grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-watch');
 
   // Alias the `test` task to run the `mocha` task instead
-  grunt.registerTask('test', 'mocha');
+  // grunt.registerTask('test', 'mocha'); -- Commented by LD Apr 11
 
 };

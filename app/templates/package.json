@@ -3,5 +3,9 @@
   "name": "",
   "version": "0.0.0",
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+  	"grunt": "~0.4.1",
+    "grunt-contrib-less": "~0.5.0",
+    "grunt-contrib-watch": "~0.3.1"
+  }
 }

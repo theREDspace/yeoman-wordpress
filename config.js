@@ -10,7 +10,7 @@ module.exports = {
 }
 
 var home            = process.env.HOME || process.env.USERPROFILE
-  , configDirectory = path.join(home, '.yeoman-wordpress')
+  , configDirectory = path.join(home, '.yeoman-trs-wordpress')
   , configPath      = path.join(configDirectory, 'config.json')
 
 /**
@@ -42,9 +42,9 @@ function getConfig(cb) {
  */
 function createConfig(values, cb) {
   var defaults = {
-    authorName: ''
-  , authorURI:  ''
-  , themeUrl:   'https://github.com/automattic/_s'
+    authorName: 'REDspace'
+  , authorURI:  'http://www.redspace.com'
+  , themeUrl:   'https://github.com/theREDspace/wp_starter'
   }
 
   var configValues = {
