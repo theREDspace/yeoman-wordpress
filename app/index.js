@@ -6,7 +6,7 @@ var util   = require('util')
   , fs     = require('fs')
   , yeoman = require('yeoman-generator')
   , rimraf = require('rimraf')
-  , db = require('mysql-native').createTCPClient()
+  , mysql = require('mysql')
   , exec   = require('child_process').exec
   , config = require('./../config.js')
   , automaton = require('automaton').create()
@@ -21,38 +21,6 @@ function Generator() {
 }
 
 util.inherits(Generator, yeoman.generators.NamedBase)
-
-// build database
-// Generator.prototype.createDatabase = function createDatabase() {
-//   var cb = this.async()
-//     , self = this
-
-
-//   db.auth('root', '')
-//   //   ,  = mysql.createConnection({
-//   //   host     : 'localhost',
-//   //   user     : 'root',
-//   //   password : 'root',
-//   // });
-
-//   // connection.connect(function(err) {
-//   //   if (err) {
-//   //     self.log.writeln('Error connecting to database, please create the table manually')
-//   //     cb()
-//   //   }
-
-//   //   self.log.writeln('')
-//   //   self.log.writeln('Connected to MySQL')
-//   //   connection.query('CREATE DATABASE ?', ['test'], function(err, result) {
-//   //     if (err) {
-//   //       self.log.writeln('Could not create database')
-//   //       cb()
-//   //     }
-
-//   //     self.log.writeln('Databse created')
-//   //   })
-//   // });
-// }
 
 // get the latest stable version of Wordpress
 Generator.prototype.getVersion = function getVersion() {
@@ -206,6 +174,83 @@ Generator.prototype.askFor = function askFor() {
     self.bootstrapVersion = self.latestBootstrapVersion
     self.fontAwesomeVersion = self.latestFAVersion
 
+    var prompts = [{
+          name: 'themeName',
+          message: 'Name of the theme you want to use: ',
+          default: 'mytheme'
+      },
+      {
+          name: 'wordpressVersion',
+          message: 'Which version of Wordpress do you want?',
+          default: self.latestVersion
+      },
+      // {
+      //     name: 'usejQuery',
+      //     message: 'Would you like to use jQuery?',
+      //     default: 'Y/n'
+      // },
+      
+      // Removed by LD -- not enough of our projects are using require at the moment,
+      // so I have removed this for now.
+
+      // {
+      //     name: 'includeRequireJS',
+      //     message: 'Would you like to include RequireJS (for AMD support)?',
+      //     default: 'Y/n',
+      //     warning: 'Yes: RequireJS will be placed into the JavaScript vendor directory.'
+      // },
+      {
+          name: 'themeBoilerplate',
+          message: 'Starter theme (please provide a github link): ',
+          default: self.defaultTheme
+      },
+      /*{
+          name: 'themeNamespace',
+          message: 'Theme Namespace: ',
+          default: self.defaultTheme
+      },*/
+      {
+          name: 'authorName',
+          message: 'Author name: ',
+          default: self.defaultAuthorName
+      },
+      {
+          name: 'authorURI',
+          message: 'Author URI: ',
+          default: self.defaultAuthorURI
+      },
+      {
+          name: 'dbtable',
+          message: '\n\nSet up your WP Database\nDatabase Name: ',
+          default: 'wordpress'
+      },
+      {
+          name: 'dbuser',
+          message: 'Database Username: '
+      },
+      {
+          name: 'dbpass',
+          message: 'Database Password: '
+      },
+      ]
+      
+
+  this.prompt(prompts, function(e, props) {
+    if(e) { return self.emit('error', e) }
+
+    // set the property to parse the gruntfile
+    self.themeNameOriginal = props.themeName
+    self.themeName = props.themeName.replace(/\ /g, '').toLowerCase()
+    self.themeOriginalURL = props.themeBoilerplate
+    self.themeBoilerplate = props.themeBoilerplate
+    self.wordpressVersion = props.wordpressVersion
+    //self.includeRequireJS = (/y/i).test(props.includeRequireJS)
+    self.authorName = props.authorName
+    self.authorURI = props.authorURI
+    self.dbtable = props.dbtable
+    self.dbuser = props.dbuser
+    self.dbpass = props.dbpass
+
     // check if the user only gave the repo url or the entire url with /tarball/{branch}
     var tarballLink = (/[.]*tarball\/[.]*/).test(self.themeBoilerplate)
     if (!tarballLink) {
@@ -218,65 +263,7 @@ Generator.prototype.askFor = function askFor() {
         self.themeBoilerplate = self.themeBoilerplate+'/tarball/master'
       }
     }
-
-    var prompts = [{
-          name: 'themeName',
-          message: 'Name of the theme you want to use: ',
-          default: 'mytheme'
-      }]
-    /*  {
-          name: 'themeBoilerplate',
-          message: 'Starter theme (please provide a github link): ',
-          default: self.defaultTheme
-      },
-      {
-          name: 'wordpressVersion',
-          message: 'Which version of Wordpress do you want?',
-          default: self.latestVersion
-      },
-      {
-          name: 'usejQuery',
-          message: 'Would you like to use jQuery?',
-          default: 'Y/n'
-      },
-      
-      // Removed by LD -- not enough of our projects are using require at the moment,
-      // so I have removed this for now.
-
-      // {
-      //     name: 'includeRequireJS',
-      //     message: 'Would you like to include RequireJS (for AMD support)?',
-      //     default: 'Y/n',
-      //     warning: 'Yes: RequireJS will be placed into the JavaScript vendor directory.'
-      // },
-
-      {
-          name: 'authorName',
-          message: 'Author name: ',
-          default: self.defaultAuthorName
-      },
-      {
-          name: 'authorURI',
-          message: 'Author URI: ',
-          default: self.defaultAuthorURI
-      }]
-      */
-
-  this.prompt(prompts, function(e, props) {
-    if(e) { return self.emit('error', e) }
-
-    // set the property to parse the gruntfile
-    self.themeNameOriginal = props.themeName
-    self.themeName = props.themeName.replace(/\ /g, '').toLowerCase()
-  //   self.themeOriginalURL = props.themeBoilerplate
-  //   self.themeBoilerplate = props.themeBoilerplate
-  //   self.wordpressVersion = props.wordpressVersion
-  //   self.usejQuery = props.usejQuery
-  //   //self.includeRequireJS = (/y/i).test(props.includeRequireJS)
-  //   self.authorName = props.authorName
-  //   self.authorURI = props.authorURI
-
-
+    
     // create the config file it does not exist
     if (!self.configExists) {
       var values = {
@@ -293,41 +280,41 @@ Generator.prototype.askFor = function askFor() {
 }
 
 // download the framework and unzip it in the project app/
-// Generator.prototype.createApp = function createApp(cb) {
-//   var cb   = this.async()
-//     , self = this 
+Generator.prototype.createApp = function createApp(cb) {
+  var cb   = this.async()
+    , self = this 
 
-//   this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
-//   this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
-// }
+  this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
+  this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
+}
 
-// // remove the basic theme and create a new one
-// Generator.prototype.createTheme = function createTheme() {
-//   var cb   = this.async()
-//     , self = this
+// remove the basic theme and create a new one
+Generator.prototype.createTheme = function createTheme() {
+  var cb   = this.async()
+    , self = this
 
-//   this.log.writeln('Removing default themes')
-//   // remove the existing themes
-//   fs.readdir('app/wp-content/themes', function(err, files) {
-//     if (typeof files != 'undefined' && files.length != 0) {
-//       files.forEach(function(file) {
-//         var pathFile = fs.realpathSync('app/wp-content/themes/'+file)
-//           , isDirectory = fs.statSync(pathFile).isDirectory()
+  this.log.writeln('Removing default themes')
+  // remove the existing themes
+  fs.readdir('app/wp-content/themes', function(err, files) {
+    if (typeof files != 'undefined' && files.length != 0) {
+      files.forEach(function(file) {
+        var pathFile = fs.realpathSync('app/wp-content/themes/'+file)
+          , isDirectory = fs.statSync(pathFile).isDirectory()
 
-//         if (isDirectory) {
-//           rimraf.sync(pathFile)
-//           self.log.writeln('Removing ' + pathFile)
-//         }
-//       })
-//     }
+        if (isDirectory) {
+          rimraf.sync(pathFile)
+          self.log.writeln('Removing ' + pathFile)
+        }
+      })
+    }
 
-//     self.log.writeln('')
-//     self.log.writeln('Downloading the starter theme')
+    self.log.writeln('')
+    self.log.writeln('Downloading the starter theme')
 
-//     // create the theme
-//     self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
-//   })
-// }
+    // create the theme
+    self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
+  })
+}
 
 // grab bootstrap
 Generator.prototype.createBootstrap = function createBootstrap() {
@@ -460,61 +447,39 @@ Generator.prototype.configureBootstrap = function configureBootstrap() {
   });
 }
 
-// // rename all the css files to scss
-// Generator.prototype.convertFiles = function convertFiles() {
-//   var cb   = this.async()
-//     , self = this
+// build database
+Generator.prototype.createDatabase = function createDatabase() {
+  var cb = this.async()
+    , self = this
 
-//   // parse recursively a directory and rename the css files to .scss
-//   function parseDirectory(path) {
-//     fs.readdir(path, function(err, files) {
-//       files.forEach(function(file) {
-//         var pathFile = fs.realpathSync(path+'/'+file)
-//           , isDirectory = fs.statSync(pathFile).isDirectory()
+  self.log.writeln('Creating database: ' + self.dbtable)
+  // db.auth('root', 'root')
+  var connection  = mysql.createConnection({
+    host     : 'localhost',
+    user     : self.dbuser,
+    password : self.dbpass,
+  });
 
-//         if (isDirectory) {
-//           parseDirectory(pathFile)
-//         }
-//         else {
-//           var cssName = /[.]*\.css/i
-//           if (cssName.test(file)) {
-//             var newName = pathFile.substring(0, pathFile.length - 3) + 'scss'
-//             // to avoid deleting style.css which is needed to activate the them,
-//             // we do not rename but only create another file then copy the content
-//             fs.open(newName, 'w', '0666', function() {
-//               fs.readFile(pathFile, 'utf8', function (err, data) {
-//                 if (err) throw err
-//                 // Insert the given theme name into SCSS and CSS files
-//                  data = data.replace(/^.*Theme Name:.*$/mg, 'Theme Name: ' + self.themeNameOriginal)
-//                 data = data.replace(/^.*Author: .*$/mg, 'Author: ' + self.authorName)
-//                 data = data.replace(/^.*Author URI: .*$/mg, 'Author URI: ' + self.authorURI)
+  connection.connect(function(err) {
+    if (err) {
+      self.log.writeln('Error connecting to database, please create the table manually')
+      cb()
+    }
 
-//                 fs.writeFile(newName, data)
-//                 fs.writeFile(pathFile, data)
-//               })
-//             })
-//           }
-//         }
-//       })
-//     })
-//   }
+    self.log.writeln('')
+    self.log.writeln('Connected to MySQL')
+    connection.query('CREATE DATABASE ' + self.dbtable, function(err, result) {
+      if (err) {
+        self.log.writeln('Could not create database')
+        cb()
+      }
 
-//   this.log.writeln('Renaming the css files to scss')
-//   parseDirectory('app/wp-content/themes/'+self.themeName)
-
-//   cb()
-// }
-
-Generator.prototype.configureGrunt = function configureGrunt() {
-  var cb   = this.async(),
-    self = this
-
-  self.log.writeln('')
-  self.log.writeln('Configuring Grunt')
-  
-  //self.installDependencies()
-
-  cb()
+      self.log.writeln('Databse created')
+      self.log.writeln('')
+      connection.end()
+      cb()
+    })
+  });
 }
 
 // generate the files to use Yeoman and the git related files
@@ -524,6 +489,33 @@ Generator.prototype.createYeomanFiles = function createYeomanFiles() {
   this.copy('package.json', 'package.json')
   this.copy('gitignore', '.gitignore')
   this.copy('gitattributes', '.gitattributes')
+}
+
+Generator.prototype.configureGrunt = function configureGrunt() {
+  var cb   = this.async(),
+    self = this
+
+  self.log.writeln('')
+  self.log.writeln('Configuring Grunt')
+  
+  try {
+    var version = exec('npm install', function(err, stdout, stderr) {
+                    if (err) {
+                      self.log.writeln('Could not configure Grunt')
+                      self.log.writeln(err)
+                    } else {
+                      self.log.writeln('')
+                      self.log.writeln(stdout)
+                    }
+                    
+                    cb()
+                  })
+  }
+  catch(e) {
+    self.log.writeln('Error: Could not configure Grunt')
+    self.log.writeln(e)
+    cb()
+  }
 }
 
 Generator.prototype.endGenerator = function endGenerator() {
