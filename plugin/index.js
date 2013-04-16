@@ -51,7 +51,6 @@ Generator.prototype.askFor = function askFor() {
     self.pluginAuthor = props.pluginAuthor
 
     cb()
-
   })
 }
 
