@@ -8,6 +8,7 @@ var util   = require('util')
   , rimraf = require('rimraf')
   , mysql = require('mysql')
   , exec   = require('child_process').exec
+  , spawn = require('child_process').spawn
   , config = require('./../config.js')
   , automaton = require('automaton').create()
 
@@ -284,6 +285,7 @@ Generator.prototype.createApp = function createApp(cb) {
   var cb   = this.async()
     , self = this 
 
+  this.log.writeln('');
   this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
   this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
 }
@@ -491,15 +493,23 @@ Generator.prototype.createYeomanFiles = function createYeomanFiles() {
   this.copy('gitattributes', '.gitattributes')
 }
 
+Generator.prototype.endGenerator = function endGenerator() {
+  this.log.writeln('')
+  this.log.writeln('... and we\'re done!')
+  //this.log.writeln('Now you just need to install Wordpress the usual way')
+  //this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
+  this.log.writeln('')
+}
+
 Generator.prototype.configureGrunt = function configureGrunt() {
-  var cb   = this.async(),
-    self = this
+  var self = this
 
   self.log.writeln('')
   self.log.writeln('Configuring Grunt')
-  
-  try {
-    var version = exec('npm install', function(err, stdout, stderr) {
+    
+  spawn('npm', ['install'], { stdio: 'inherit' });
+  /*try {
+    var version = exec('npm install', { stdio: 'inherit' }, function(err, stdout, stderr) {
                     if (err) {
                       self.log.writeln('Could not configure Grunt')
                       self.log.writeln(err)
@@ -515,13 +525,5 @@ Generator.prototype.configureGrunt = function configureGrunt() {
     self.log.writeln('Error: Could not configure Grunt')
     self.log.writeln(e)
     cb()
-  }
-}
-
-Generator.prototype.endGenerator = function endGenerator() {
-  this.log.writeln('')
-  this.log.writeln('... and we\'re done!')
-  //this.log.writeln('Now you just need to install Wordpress the usual way')
-  //this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
-  this.log.writeln('')
+  }*/
 }
