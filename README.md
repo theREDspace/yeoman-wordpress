@@ -4,7 +4,7 @@
 
   For more informations about Yeoman, see [Yeoman.io](http://yeoman.io/)
 
-  Forked from https://github.com/romainberger/yeoman-wordpress
+  Forked from [https://github.com/romainberger/yeoman-wordpress](https://github.com/romainberger/yeoman-wordpress)
 
 ## Installation
 
@@ -22,7 +22,21 @@
 
   `$ yo yo-trs-wordpress` - Generates a new WordPress project with a starter theme and the files needed to use Yeoman. Once Yeoman is done, install your new WordPress project, and activate the theme in the admin panel.
 
-  Yeoman will ask you which version of WordPress you want to use (latest stable version by default), the starter theme and a few informations to make the theme ready be to used. Most of the defaults informations can be changed in the [config file](#configuration).
+  The customized generator is setup to do the following:
+  
+  + Download the most recent version of WordPress
+  + Download the most recent version of the customized Underscores Theme for REDspace projects
+  + Download the most recent version of the Twitter Bootstrap
+  + Download the most recent version of Font Awesome
+  + Download the most recent version of LESS Elements
+  + Uncompress WordPress to the “app” directory
+  + Uncompress the other projects to the “src” directory
+  + Clean up the “src” directory so that only the files I want are set up nicely for me
+  + Create a basic style.less for my WordPress project
+  + Create a Gruntfile that is setup to watch the LESS file and compiles it to the proper directory in the WordPress theme
+  + Set up the database table that WordPress will be installed to
+
+Yeoman will prompt you which version of WordPress you want to use (latest stable version by default), the starter theme and a few informations to make the theme ready be to used. You'll also be prompted for a database name, the database user name, and database password. **Please ensure your database server is running when the generator runs so your database will be created for you**. Most of the defaults informations can be changed in the [config file](#configuration).
 
 ### Plugin
 
