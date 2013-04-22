@@ -10,12 +10,12 @@ module.exports = function( grunt ) {
     less: {
       development: {
         options: {
-          paths: 'src/less/include'
+          paths: 'src/less/includes'
         },
         files: [{
           expand: true,
           cwd: 'src/less/',
-          src: ['**/*.less', '!**/bootstrap.*.less'],
+          src: ['**/*.less', '!**/includes/*.less'],
           dest: 'app/wp-content/themes/<%= themeName %>/',
           ext: '.css'
         }]
@@ -32,14 +32,14 @@ module.exports = function( grunt ) {
         }
       },
 
-      reload: {
+      /*reload: {
         files: [
           'app/wp-content/themes/<%= themeName %>/*.php',
           'app/wp-content/themes/<%= themeName %>/*.css',
           'app/wp-content/themes/<%= themeName %>/js/*.js',
           'app/wp-content/themes/<%= themeName %>/images/*'
         ],
-        tasks: 'reload'
+        tasks: 'reload'*/
       }
     },
 
