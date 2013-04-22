@@ -8,11 +8,11 @@
 
 ## Installation
 
-	Install Yeoman before doing anything else
+  Install Yeoman before doing anything else.
 
-	`$ npm install -g yo grunt-cli bower`
+  `$ npm install -g yo grunt-cli bower`
 
-	Create a directory for your project, navigate to that directory in terminal and type
+  Create a directory for your project, navigate to that directory in terminal and type:
 
   `$ npm install generator-yo-trs-wordpress`
 
