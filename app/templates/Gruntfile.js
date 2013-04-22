@@ -39,8 +39,8 @@ module.exports = function( grunt ) {
           'app/wp-content/themes/<%= themeName %>/js/*.js',
           'app/wp-content/themes/<%= themeName %>/images/*'
         ],
-        tasks: 'reload'*/
-      }
+        tasks: 'reload'
+      }*/
     },
 
     // default lint configuration, change this to match your setup:
