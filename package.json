@@ -1,6 +1,6 @@
 {
   "name": "generator-yo-trs-wordpress",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "description": "Yeoman generator for Wordpress project for theREDspace",
   "homepage": "https://github.com/theREDspace/yeoman-wordpress",
   "author": {
@@ -19,7 +19,6 @@
   "dependencies": {
     "yeoman-generator": "~0.10.2",
     "rimraf": "~2.1.4",
-    "automaton": "~0.1.4",
     "mysql-native": "~0.4.7",
     "mysql": "~2.0.0-alpha7"
   },

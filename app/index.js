@@ -10,27 +10,68 @@ var util   = require('util')
   , exec   = require('child_process').exec
   , spawn = require('child_process').spawn
   , config = require('./../config.js')
-  , automaton = require('automaton').create()
+  , colors = require('colors')
 
 
-module.exports = Generator
+// custom statuses that aren't in colors just yet
+function pad(status) {
+  var max = 'identical'.length;
+  var delta = max - status.length;
+  return delta ? new Array(delta + 1).join(' ') + status : status;
+}
 
-function Generator() {
+var statuses = {
+  update   : 'cyan',
+  remove   : 'red'
+}
+
+var WPGenerator = module.exports = function Generator() {
   yeoman.generators.Base.apply(this, arguments)
 
   this.sourceRoot(path.join(__dirname, 'templates'))
 }
 
-util.inherits(Generator, yeoman.generators.NamedBase)
+util.inherits(WPGenerator, yeoman.generators.NamedBase)
+
+// initialize generator
+WPGenerator.prototype.initGenerator = function initGenerator() {
+  var self = this
+
+  this.themeNameOriginal = 'My Theme'
+  this.themeName = 'mytheme'
+  this.authorName = 'My Name'
+  this.authorURI = 'My Site'
+  this.dbtable = 'wordpress'
+  this.dbuser = 'root'
+  this.dbpass = 'root'
+  self.themeOriginalURL = 'https://github.com/theREDspace/wp_starter/tarball/master'
+  self.themeBoilerplate = 'https://github.com/theREDspace/wp_starter/tarball/master'
+  self.wordpressVersion = '3.5.1'
+  self.bootstrapVersion = '2.3.1'
+  self.fontAwesomeVersion = '3.0.2'
+
+  self.log.writeln('')
+  self.log.writeln('Intializing WP Generator'.bold)
+
+  Object.keys(statuses).forEach(function (status) {
+    self.log[status] = function() {
+      var color = statuses[status]
+
+      self.log.write(pad(status)[color]).write(' ')
+      self.log.write(util.format.apply(util, arguments) + '\n')
+      return self.log
+    }
+  })
+}
 
 // get the latest stable version of Wordpress
-Generator.prototype.getVersion = function getVersion() {
+WPGenerator.prototype.getVersion = function getVersion() {
   var cb = this.async()
     , self = this
     , latestVersion = '3.5.1' // we still store the latest version to avoid throwing error
 
   this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Wordpress')
+  this.log.writeln('Trying to get the latest stable version of Wordpress'.bold)
 
   // try to get the latest version using the git tags
   try {
@@ -61,13 +102,13 @@ Generator.prototype.getVersion = function getVersion() {
 }
 
 // get the latest stable version of Bootstrap
-Generator.prototype.getBootstrapVersion = function getBootstrapVersion() {
+WPGenerator.prototype.getBootstrapVersion = function getBootstrapVersion() {
   var cb = this.async()
     , self = this
     , latestBootstrapVersion = '2.3.1' // we still store the latest version to avoid throwing error
 
   this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Twitter Bootstrap')
+  this.log.writeln('Trying to get the latest stable version of Twitter Bootstrap'.bold)
 
   // try to get the latest version using the git tags
   try {
@@ -98,13 +139,13 @@ Generator.prototype.getBootstrapVersion = function getBootstrapVersion() {
 }
 
 // get the latest stable version of Font Awesome
-Generator.prototype.getFAVersion = function getFAVersion() {
+WPGenerator.prototype.getFAVersion = function getFAVersion() {
   var cb = this.async()
     , self = this
     , latestFAVersion = '3.0.2' // we still store the latest version to avoid throwing error
 
   this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Font Awesome')
+  this.log.writeln('Trying to get the latest stable version of Font Awesome'.bold)
 
   // try to get the latest version using the git tags
   try {
@@ -135,7 +176,7 @@ Generator.prototype.getFAVersion = function getFAVersion() {
 }
 
 // try to find the config file and read the infos to set the prompts default values
-Generator.prototype.getConfig = function getConfig() {
+WPGenerator.prototype.getConfig = function getConfig() {
   var cb   = this.async()
     , self = this
 
@@ -159,9 +200,12 @@ Generator.prototype.getConfig = function getConfig() {
   })
 }
 
-Generator.prototype.askFor = function askFor() {
+WPGenerator.prototype.askFor = function askFor() {
   var cb   = this.async()
     , self = this
+
+    this.log.writeln('')
+    this.log.writeln('Customize your WP instance'.bold)
 
     self.themeNameOriginal = 'mytheme'
     self.themeName = 'mytheme'
@@ -222,7 +266,7 @@ Generator.prototype.askFor = function askFor() {
       },
       {
           name: 'dbtable',
-          message: '\n\nSet up your WP Database\nDatabase Name: ',
+          message: '\r\nSet up your WP Database'.underline + '\r\nDatabase Name: ',
           default: 'wordpress'
       },
       {
@@ -281,7 +325,7 @@ Generator.prototype.askFor = function askFor() {
 }
 
 // download the framework and unzip it in the project app/
-Generator.prototype.createApp = function createApp(cb) {
+WPGenerator.prototype.createApp = function createApp(cb) {
   var cb   = this.async()
     , self = this 
 
@@ -291,7 +335,7 @@ Generator.prototype.createApp = function createApp(cb) {
 }
 
 // remove the basic theme and create a new one
-Generator.prototype.createTheme = function createTheme() {
+WPGenerator.prototype.createTheme = function createTheme() {
   var cb   = this.async()
     , self = this
 
@@ -319,7 +363,7 @@ Generator.prototype.createTheme = function createTheme() {
 }
 
 // grab bootstrap
-Generator.prototype.createBootstrap = function createBootstrap() {
+WPGenerator.prototype.createBootstrap = function createBootstrap() {
   var cb   = this.async()
     , self = this
 
@@ -328,7 +372,7 @@ Generator.prototype.createBootstrap = function createBootstrap() {
 }
 
 // grab fontawesome
-Generator.prototype.createFontAwesome = function createFontAwesome() {
+WPGenerator.prototype.createFontAwesome = function createFontAwesome() {
   var cb   = this.async()
     , self = this
 
@@ -337,7 +381,7 @@ Generator.prototype.createFontAwesome = function createFontAwesome() {
 }
 
 // grab less elements
-Generator.prototype.createLessElements = function createLessElements() {
+WPGenerator.prototype.createLessElements = function createLessElements() {
   var cb   = this.async()
     , self = this
 
@@ -345,147 +389,141 @@ Generator.prototype.createLessElements = function createLessElements() {
   this.tarball('https://github.com/dmitryf/elements/tarball/master', 'src/elements', cb)
 }
 
-Generator.prototype.configureBootstrap = function configureBootstrap() {
-  var cb   = this.async()
-    , self = this
-    , cleanTask = {
-      name: 'Clean Bootstrap',
-      tasks: [
-        {
-          task: 'mkdir',
-          options: {
-            dirs: [
-            'src/less/includes', 
-            'src/js',
-            'src/font'
-            ]
-          }
-        },
-        {
-          task: 'mv',
-          options: {
-            files: {
-              'src/bootstrap/js': 'src/',
-              'src/bootstrap/less/*': 'src/less/includes',
-              'src/font-awesome/less/*': 'src/less/includes',
-              'src/font-awesome/font': 'src',
-              'src/elements/*.less': 'src/less/includes'
-            }
-          }
-        },
-        {
-          task: 'rm',
-          options: {
-            files: [
-              'src/less/includes/sprites.less'
-            ]
-          }
-        },
-        {
-          task: function(o, c, next) {
-            
-            self.log.writeln('Cleaning unneccessary files')
-            var dirs = [
-              'src/bootstrap',
-              'src/font-awesome',
-              'src/elements',
-            ]
+WPGenerator.prototype.configureBootstrap = function configureBootstrap() {
+  var self = this
+    , sourceRoot = this.sourceRoot()
 
-            dirs.forEach(function(dir) {
-              var pathFile = fs.realpathSync(dir)
-                , isDirectory = fs.statSync(pathFile).isDirectory()
-
-              if (isDirectory) {
-                rimraf.sync(pathFile)
-                self.log.writeln('Removing ' + dir)
-              }
-            })
-            
-            self.log.writeln('')
-            next()
-          }
-        },
-        {
-          task: function(o, c, next) {
-
-            self.log.writeln('Updating Bootstrap to use Font Awesome')
-            var pathFile = 'src/less/includes/bootstrap.less'
-            fs.readFile(pathFile, 'utf8', function(err, data) {
-              if (err) throw err
-              
-              // replace sprites with font-awesome
-              var result = data.replace('sprites.less', 'font-awesome.less')
-
-              fs.writeFile(pathFile, result, 'utf8', function(err) {
-                if (err) {
-                  self.log.writeln('Error')
-                  self.log.writeln(err)
-                } else {
-                  next()
-                }
-              })
-            })
-          }
-        }, 
-        {
-          task: function(o, c, next) {
-            self.log.writeln('Building base theme less file')
-            self.template('style.less', 'src/less/style.less')
-            next();
-          }
-        },
-      ]
-    }
+  self.sourceRoot(self.destinationRoot());
 
   self.log.writeln('Configuring Bootstrap')
   
-  automaton.run(cleanTask, {}, function(err) {
-    if (!err) {
-      cb()
-    } else {
-      self.log.writeln('Error')
-      self.log.writeln(err)
-    }
-  });
+  this.mkdir('src/less/includes')
+  this.mkdir('app/wp-content/themes/' + self.themeName + '/js/bootstrap')
+  this.mkdir('app/wp-content/themes/' + self.themeName + '/font')
+
+  // less
+  self.directory('src/bootstrap/less', 'src/less/includes')
+  self.directory('src/font-awesome/less', 'src/less/includes')
+  self.copy('src/elements/elements.less', 'src/less/includes/elements.less')
+
+  // js
+  self.directory('src/bootstrap/js', 'app/wp-content/themes/' + self.themeName + '/js/bootstrap')
+  
+  // fonts
+  self.directory('src/font-awesome/font', 'app/wp-content/themes/' + self.themeName + '/font')
+
+  // reset source root
+  self.sourceRoot(sourceRoot)
 }
 
-// build database
-Generator.prototype.createDatabase = function createDatabase() {
+// clean up the bad folders
+WPGenerator.prototype.cleanInstall = function cleanInstall() {
+  var self = this
+
+  self.log.writeln('')
+  self.log.writeln('Cleaning unneccessary files'.bold)
+  var dirs = [
+    'src/bootstrap',
+    'src/font-awesome',
+    'src/elements',
+  ]
+
+  dirs.forEach(function(dir) {
+    var pathFile = fs.realpathSync(dir)
+      , isDirectory = fs.statSync(pathFile).isDirectory()
+
+    if (isDirectory) {
+      rimraf.sync(pathFile)
+      self.log.remove(dir)
+    }
+  })
+}
+
+// // replace bootstrap sprites with font-awesome
+WPGenerator.prototype.bootAwesome = function bootAwesome() {
   var cb = this.async()
     , self = this
 
-  self.log.writeln('Creating database: ' + self.dbtable)
-  // db.auth('root', 'root')
-  var connection  = mysql.createConnection({
-    host     : 'localhost',
-    user     : self.dbuser,
-    password : self.dbpass,
-  });
+  self.log.writeln('')
+  self.log.writeln('Updating Bootstrap to use Font Awesome'.bold)
+  
+  //function bootUp() {
+    var pathFile = 'src/less/includes/bootstrap.less'
+    fs.readFile(pathFile, 'utf8', function(err, data) {
+      if (err) throw err
+      
+      var result = data.replace('sprites.less', 'font-awesome.less')
 
-  connection.connect(function(err) {
-    if (err) {
-      self.log.writeln('Error connecting to database, please create the table manually')
-      cb()
-    }
-
-    self.log.writeln('')
-    self.log.writeln('Connected to MySQL')
-    connection.query('CREATE DATABASE ' + self.dbtable, function(err, result) {
-      if (err) {
-        self.log.writeln('Could not create database')
-        cb()
-      }
-
-      self.log.writeln('Databse created')
-      self.log.writeln('')
-      connection.end()
-      cb()
+      fs.writeFile(pathFile, result, 'utf8', function(werr) {
+        if (werr) {
+          self.log.writeln('Error')
+          self.log.writeln(werr)
+        } else {
+          self.log.update(pathFile)
+          cb()
+        }
+      })
     })
-  });
+  //}
+
+  //bootUp()
 }
 
-// generate the files to use Yeoman and the git related files
-Generator.prototype.createYeomanFiles = function createYeomanFiles() {
+// build the CSS file for the theme
+WPGenerator.prototype.createThemeStyle = function createThemeStyle() {
+  this.log.writeln('')
+  this.log.writeln('Building base theme less file'.bold)
+  this.template('style.less', 'src/less/style.less')
+  this.log.create('style.less')
+}
+
+// build database
+WPGenerator.prototype.createDatabase = function createDatabase() {
+
+  var cb = this.async()
+    , self = this
+
+  self.log.writeln('')  
+  self.log.writeln('Creating database'.bold)
+
+  function buildDB() {
+    var connection  = mysql.createConnection({
+      host     : 'localhost',
+      user     : self.dbuser,
+      password : self.dbpass,
+    });
+
+    connection.connect(function(err) {
+      if (err) {
+        self.log.error('Error connecting to database, please create the table manually')
+      }
+
+      self.log.info('Connected to MySQL')
+      connection.query('CREATE DATABASE ' + self.dbtable, function(err, result) {
+        if (err) {
+          self.log.error('Could not create database')
+        }
+
+        self.log.create(self.dbtable + 'table')
+        connection.end(function() {
+          cb()
+        })
+      })
+    })
+  }
+
+  buildDB()
+}
+
+// TODO: Database error checking
+// TODO: Build the WP Config file...
+// TODO: Install WordPress
+
+// // generate the files to use Yeoman and the git related files
+ WPGenerator.prototype.createYeomanFiles = function createYeomanFiles() {
+  this.log.writeln('')
+  this.log.writeln('Building Yeoman Templates'.bold)
+
   this.template('Gruntfile.js')
   this.template('bowerrc', '.bowerrc')
   this.copy('package.json', 'package.json')
@@ -493,37 +531,40 @@ Generator.prototype.createYeomanFiles = function createYeomanFiles() {
   this.copy('gitattributes', '.gitattributes')
 }
 
-Generator.prototype.endGenerator = function endGenerator() {
+// configure grunt
+WPGenerator.prototype.installGrunt = function installGrunt() {
+  var cb = this.async()
+    , self = this
+
+  self.log.writeln('')
+  self.log.writeln('Installing Grunt'.bold)
+    
+  var npm = spawn('npm', ['install'], { stdio: 'inherit' });
+
+  npm.on('close', function(data) {
+    cb();
+  })
+}
+
+// run grunt build (so we have a .css file)
+WPGenerator.prototype.buildStylesheet = function buildStylesheet() {
+  var cb = this.async()
+    , self = this
+
+  self.log.writeln('')
+  self.log.writeln('Building Stylesheet'.bold)
+    
+  var grunt = spawn('grunt', ['less'], { stdio: 'inherit' });
+
+  grunt.on('close', function(data) {
+    cb();
+  })
+}
+
+WPGenerator.prototype.endGenerator = function endGenerator() {
   this.log.writeln('')
-  this.log.writeln('... and we\'re done!')
+  this.log.writeln('... and we\'re done!'.bold)
   //this.log.writeln('Now you just need to install Wordpress the usual way')
   //this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
   this.log.writeln('')
-}
-
-Generator.prototype.configureGrunt = function configureGrunt() {
-  var self = this
-
-  self.log.writeln('')
-  self.log.writeln('Configuring Grunt')
-    
-  spawn('npm', ['install'], { stdio: 'inherit' });
-  /*try {
-    var version = exec('npm install', { stdio: 'inherit' }, function(err, stdout, stderr) {
-                    if (err) {
-                      self.log.writeln('Could not configure Grunt')
-                      self.log.writeln(err)
-                    } else {
-                      self.log.writeln('')
-                      self.log.writeln(stdout)
-                    }
-                    
-                    cb()
-                  })
-  }
-  catch(e) {
-    self.log.writeln('Error: Could not configure Grunt')
-    self.log.writeln(e)
-    cb()
-  }*/
 }
