@@ -7,7 +7,6 @@ var util   = require('util')
   	, yeoman = require('yeoman-generator')
   	, rimraf = require('rimraf')
   	, config = require('./../config.js')
-  	, automaton = require('automaton').create()
 
 module.exports = Generator
 
@@ -55,15 +54,6 @@ Generator.prototype.cleanMe = function cleanMe() {
           }
     	]
     }
-
-    automaton.run(cleanTask, {}, function(err) {
-	    if (!err) {
-			cb()
-	    } else {
-			self.log.writeln('Error')
-			self.log.writeln(err)
-	    }
-	});
   })
 }
 

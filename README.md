@@ -45,3 +45,7 @@ Yeoman will prompt you which version of WordPress you want to use (latest stable
 ## Configuration
 
   Yeoman-WordPress stores some defaults values so you won't have to type the same things every time you start a project. The first time you will use the generator it will create a config file with the informations you gave. These informations will be used as default values so you can override them during the init tasks. If you want to change the default values you can do it by editing the config file located in `~/.yeoman-wordpress/config.json`.
+
+## Plans
+
+  I plan on getting a few more smaller items done in the near future, including better error catching (mainly around the MySQL database), creating the actual wp-config file and hopefully integrating with wp-cli to run the WordPress install.
