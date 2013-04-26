@@ -36,6 +36,7 @@
   + Create the wp-config.php file
   + Create a Gruntfile that is setup to watch the LESS file and compiles it to the proper directory in the WordPress theme
   + Set up the database table that WordPress will be installed to
+  + Check for existance of [wp-cli](http://wp-cli.org) and install database tables if possible
 
 Yeoman will prompt you which version of WordPress you want to use (latest stable version by default), the starter theme and a few informations to make the theme ready be to used. You'll also be prompted for a database name, the database user name, and database password. **Please ensure your database server is running when the generator runs so your database will be created for you**. Most of the defaults informations can be changed in the [config file](#configuration).
 
@@ -49,4 +50,4 @@ Yeoman will prompt you which version of WordPress you want to use (latest stable
 
 ## Plans
 
-  I plan on getting a few more smaller items done in the near future, including better error catching (mainly around the MySQL database) and hopefully integrating with wp-cli to run the WordPress install.
+  I plan on getting a few more smaller items done in the near future, including better error catching (mainly around the MySQL database)

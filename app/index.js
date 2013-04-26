@@ -253,6 +253,28 @@ WPGenerator.prototype.askFor = function askFor() {
           default: self.defaultAuthorURI
       },
       {
+          name: 'siteUrl',
+          message: '\r\nSet up your WP Instance'.underline + '\r\nSite URL: ',
+          default: ''
+      },
+      {
+          name: 'siteTitle',
+          message: 'Site Title: ',
+          default: ''
+      },
+      {
+          name: 'adminUser',
+          message: 'Admin Username: '
+      },
+      {
+          name: 'adminEmail',
+          message: 'Admin Email: '
+      },
+      {
+          name: 'adminPass',
+          message: 'Admin Password: '
+      },
+      {
           name: 'dbtable',
           message: '\r\nSet up your WP Database'.underline + '\r\nDatabase Name: ',
           default: 'wordpress'
@@ -289,6 +311,11 @@ WPGenerator.prototype.askFor = function askFor() {
     self.dbuser = props.dbuser
     self.dbpass = props.dbpass
     self.dbprefix = props.dbprefix
+    self.siteUrl = props.siteUrl
+    self.siteTitle = props.siteTitle
+    self.adminUser = props.adminUser
+    self.adminPass = props.adminPass
+    self.adminEmail = props.adminEmail
 
     // check if the user only gave the repo url or the entire url with /tarball/{branch}
     var tarballLink = (/[.]*tarball\/[.]*/).test(self.themeBoilerplate)
@@ -510,7 +537,6 @@ WPGenerator.prototype.createDatabase = function createDatabase() {
 }
 
 // TODO: Improve database error checking
-// TODO: Install WordPress
 
 // // generate the files to use Yeoman and the git related files
  WPGenerator.prototype.createYeomanFiles = function createYeomanFiles() {
@@ -567,10 +593,91 @@ WPGenerator.prototype.buildStylesheet = function buildStylesheet() {
   })
 }
 
+WPGenerator.prototype.checkWPCLI = function checkWPCLI() {
+  var cb = this.async()
+    , self = this
+
+  this.log.writeln('')
+  this.log.writeln('Checking for WP-CLI'.bold)
+
+  try {
+    var version = exec(
+      'wp help', 
+      function(err, stdout, stderr) {
+        if (err) {
+          self.log.error('could not find wp-cli, skipping automatedcd  wp install')
+          self.hasCLI = false;
+        }
+        else {
+          self.hasCLI = true;
+          self.log.ok('found instance of wp-cli')
+        }
+
+        cb()
+      })
+  }
+  catch(e) {
+    self.log.error('could not find wp-cli, skipping automated wp install')
+    cb()
+  }
+}
+
+WPGenerator.prototype.installWP = function installWP() {
+  var cb = this.async()
+    , self = this
+
+  if (self.hasCLI) {
+    this.log.writeln('')
+    this.log.writeln('Installing WordPress'.bold)
+
+    /**
+      wp core install 
+      --url=<url> 
+      --title=<site-title> 
+      [--admin_name=<username>] 
+      --admin_email=<email> 
+      --admin_password=<password>
+    **/
+
+    var cli = spawn(
+      'wp', 
+      [
+        'core',
+        'install',
+        '--url=' + self.siteUrl,
+        '--title="' + escape(self.siteTitle) + '"',
+        '--admin_name=' + self.adminUser,
+        '--admin_email=' + self.adminEmail,
+        '--admin_password=' + self.adminPass
+      ],
+      {
+        stdio: 'inherit',
+        cwd: 'app'
+      }
+    )
+
+    cli.on('close', function(data) {
+      cb()
+    })
+
+  } else {
+    cb()
+  }
+}
+
 WPGenerator.prototype.endGenerator = function endGenerator() {
   this.log.writeln('')
   this.log.writeln('... and we\'re done!'.bold)
-  //this.log.writeln('Now you just need to install Wordpress the usual way')
-  //this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
+
+  if (!this.hasCLI) {
+    this.log.writeln('')
+    this.log.writeln('Now you just need to install Wordpress the usual way,')
+    this.log.writeln('if you installed wp-cli (wp-cli.org), this task could be automated for you')
+  }
+
+  this.log.writeln('')
+  this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
+  
+
   this.log.writeln('')
 }
