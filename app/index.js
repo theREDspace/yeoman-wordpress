@@ -38,20 +38,6 @@ util.inherits(WPGenerator, yeoman.generators.NamedBase)
 WPGenerator.prototype.initGenerator = function initGenerator() {
   var self = this
 
-  this.themeNameOriginal = 'My Theme'
-  this.themeName = 'mytheme'
-  this.authorName = 'My Name'
-  this.authorURI = 'My Site'
-  this.dbtable = 'wordpress'
-  this.dbuser = 'root'
-  this.dbpass = 'root'
-  self.themeOriginalURL = 'https://github.com/theREDspace/wp_starter/tarball/master'
-  self.themeBoilerplate = 'https://github.com/theREDspace/wp_starter/tarball/master'
-  self.wordpressVersion = '3.5.1'
-  self.bootstrapVersion = '2.3.1'
-  self.fontAwesomeVersion = '3.0.2'
-  self.dbprefix = 'wp_'
-
   self.log.writeln('')
   self.log.writeln('Intializing WP Generator'.bold)
 

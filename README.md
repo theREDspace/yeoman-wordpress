@@ -33,6 +33,7 @@
   + Uncompress the other projects to the “src” directory
   + Clean up the “src” directory so that only the files I want are set up nicely for me
   + Create a basic style.less for my WordPress project
+  + Create the wp-config.php file
   + Create a Gruntfile that is setup to watch the LESS file and compiles it to the proper directory in the WordPress theme
   + Set up the database table that WordPress will be installed to
 
@@ -48,4 +49,4 @@ Yeoman will prompt you which version of WordPress you want to use (latest stable
 
 ## Plans
 
-  I plan on getting a few more smaller items done in the near future, including better error catching (mainly around the MySQL database), creating the actual wp-config file and hopefully integrating with wp-cli to run the WordPress install.
+  I plan on getting a few more smaller items done in the near future, including better error catching (mainly around the MySQL database) and hopefully integrating with wp-cli to run the WordPress install.
