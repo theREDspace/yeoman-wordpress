@@ -11,6 +11,7 @@ var util   = require('util')
   , spawn = require('child_process').spawn
   , config = require('./../config.js')
   , colors = require('colors')
+  , uuid = require('node-uuid')
 
 
 // custom statuses that aren't in colors just yet
@@ -49,6 +50,7 @@ WPGenerator.prototype.initGenerator = function initGenerator() {
   self.wordpressVersion = '3.5.1'
   self.bootstrapVersion = '2.3.1'
   self.fontAwesomeVersion = '3.0.2'
+  self.dbprefix = 'wp_'
 
   self.log.writeln('')
   self.log.writeln('Intializing WP Generator'.bold)
@@ -270,6 +272,11 @@ WPGenerator.prototype.askFor = function askFor() {
           default: 'wordpress'
       },
       {
+          name: 'dbprefix',
+          message: 'Database Prefix: ',
+          default: 'wp_'
+      },
+      {
           name: 'dbuser',
           message: 'Database Username: '
       },
@@ -295,6 +302,7 @@ WPGenerator.prototype.askFor = function askFor() {
     self.dbtable = props.dbtable
     self.dbuser = props.dbuser
     self.dbpass = props.dbpass
+    self.dbprefix = props.dbprefix
 
     // check if the user only gave the repo url or the entire url with /tarball/{branch}
     var tarballLink = (/[.]*tarball\/[.]*/).test(self.themeBoilerplate)
@@ -515,8 +523,7 @@ WPGenerator.prototype.createDatabase = function createDatabase() {
   buildDB()
 }
 
-// TODO: Database error checking
-// TODO: Build the WP Config file...
+// TODO: Improve database error checking
 // TODO: Install WordPress
 
 // // generate the files to use Yeoman and the git related files
@@ -524,8 +531,21 @@ WPGenerator.prototype.createDatabase = function createDatabase() {
   this.log.writeln('')
   this.log.writeln('Building Yeoman Templates'.bold)
 
+  this.log.info('Generating unique phrases')
+
+  this.authKey = uuid.v4()
+  this.secureAuthKey = uuid.v4()
+  this.loggedInKey = uuid.v4()
+  this.secureAuthKey = uuid.v4()
+  this.nonceKey = uuid.v4()
+  this.authSalt = uuid.v4()
+  this.secureAuthSalt = uuid.v4()
+  this.loggedInSalt = uuid.v4()
+  this.nonceSalt = uuid.v4()
+  
   this.template('Gruntfile.js')
   this.template('bowerrc', '.bowerrc')
+  this.template('wp-config.php', 'app/wp-config.php')
   this.copy('package.json', 'package.json')
   this.copy('gitignore', '.gitignore')
   this.copy('gitattributes', '.gitattributes')

@@ -20,7 +20,8 @@
     "yeoman-generator": "~0.10.2",
     "rimraf": "~2.1.4",
     "mysql-native": "~0.4.7",
-    "mysql": "~2.0.0-alpha7"
+    "mysql": "~2.0.0-alpha7",
+    "uuid": "~1.4.1"
   },
   "engines": {
     "node": ">=0.8.0"
