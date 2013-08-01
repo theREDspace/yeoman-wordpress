@@ -33,6 +33,16 @@ define('DB_CHARSET', 'utf8');
 /** The Database Collate type. Don't change this if in doubt. */
 define('DB_COLLATE', '');
 
+/** Use local file system instead of FTP for updating plugins/themes/WordPress */
+define('FS_METHOD', 'direct');
+
+/** Set the maximum upload filesize to something reasonable */
+define('WP_MAX_UPLOAD_FILESIZE', '32M');
+
+/** Make it easier to setup new environments by using dynamic hostnames */
+define('WP_SITEURL', 'http://' . $_SERVER['SERVER_NAME']);
+define('WP_HOME', WP_SITEURL);
+
 /**#@+
  * Authentication Unique Keys and Salts.
  *

@@ -1,63 +1,42 @@
+'use strict';
 
-'use strict'
+// Dependencies
+var path = require('path');
+var fs   = require('fs');
 
-var path = require('path')
-  , fs   = require('fs')
-
-module.exports = {
-  getConfig: getConfig
-, createConfig: createConfig
-}
-
-var home            = process.env.HOME || process.env.USERPROFILE
-  , configDirectory = path.join(home, '.yeoman-trs-wordpress')
-  , configPath      = path.join(configDirectory, 'config.json')
+// Module variables
+var home            = process.env.HOME || process.env.USERPROFILE;
+var configDirectory = path.join(home, '.yeoman-trs-wordpress');
+var configPath      = path.join(configDirectory, 'config.json');
 
 /**
- *  Read the config file
- *  And trigger the callback function with errors and
- *  datas as parameters
+ * Read the config file and trigger the callback function with errors and data
+ * as parameters.
+ * @param {!function} cb
  */
-function getConfig(cb) {
-  try {
-    fs.readFile(configPath, 'utf8', function(err, data) {
-      if (err) {
-        cb(true)
-      }
-      else {
-        cb(false, JSON.parse(data))
-      }
-    })
-  }
-  catch(e) {
-    cb(true)
-  }
-}
+exports.getConfig = function (cb) {
+  fs.readFile(configPath, 'utf8', function (err, data) {
+    if (err) {
+      cb(err);
+    } else {
+      cb(false, JSON.parse(data));
+    }
+  });
+};
 
 /**
- *  Create the config file
- *
- *  @param object values Values to write in the config file
- *  @param function cb Callback function
+ * Create the config file
+ * @param {!object} values
+ * @param {!function} cb
  */
-function createConfig(values, cb) {
-  var defaults = {
-    authorName: 'REDspace'
-  , authorURI:  'http://www.redspace.com'
-  , themeUrl:   'https://github.com/theREDspace/wp_starter'
-  }
+exports.createConfig = function (values, cb) {
+  var config = {
+    authorName : values.authorName || 'theREDspace',
+    authorURI :  values.authorURI || 'http://www.redspace.com',
+    theme :   values.themeUrl || 'https://github.com/theREDspace/wp_starter'
+  };
 
-  var configValues = {
-    authorName: values.authorName || defaults.authorName
-  , authorURI:  values.authorURI || defaults.authorURI
-  , themeUrl:   values.themeUrl || defaults.themeUrl
-  }
-
-  var configData = '{\n\t'
-  configData += '"authorName": "'+configValues.authorName+'",\n\t"authorURI": "'+configValues.authorURI+'",\n\t'
-  configData += '"theme": "'+configValues.themeUrl+'"\n}'
-
-  fs.mkdir(configDirectory, '0777', function() {
-    fs.writeFile(configPath, configData, 'utf8', cb)
-  })
-}
+  fs.mkdir(configDirectory, '0777', function () {
+    fs.writeFile(configPath, JSON.stringify(config), 'utf8', cb);
+  });
+};
