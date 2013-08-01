@@ -558,7 +558,7 @@ WPGenerator.prototype.createDatabase = function createDatabase() {
   this.template('Gruntfile.js')
   this.template('bowerrc', '.bowerrc')
   this.template('wp-config.php', 'app/wp-config.php')
-  this.copy('package.json', 'package.json')
+  this.template('package.json', 'package.json')
   this.copy('gitignore', '.gitignore')
   this.copy('gitattributes', '.gitattributes')
 }
