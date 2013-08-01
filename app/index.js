@@ -1,647 +1,595 @@
+'use strict';
 
-'use strict'
+// Dependencies
+var util    = require('util');
+var path    = require('path');
+var fs      = require('fs');
+var yeoman  = require('yeoman-generator');
+var rimraf  = require('rimraf');
+var mysql   = require('mysql');
+var exec    = require('child_process').exec;
+var spawn   = require('child_process').spawn;
+var config  = require('./../config.js');
+var colors  = require('colors');
+var uuid    = require('node-uuid');
+var request = require('request');
 
-var util   = require('util')
-  , path   = require('path')
-  , fs     = require('fs')
-  , yeoman = require('yeoman-generator')
-  , rimraf = require('rimraf')
-  , mysql = require('mysql')
-  , exec   = require('child_process').exec
-  , spawn = require('child_process').spawn
-  , config = require('./../config.js')
-  , colors = require('colors')
-  , uuid = require('node-uuid')
+/**
+ * A new Yeoman generator.
+ * @constructor
+ * @extends yeoman.generators.NamedBase
+ */
+var WordPressGenerator = module.exports = function Generator(args, options, config) {
+  yeoman.generators.Base.apply(this, arguments);
 
+  // Set the sorce root used with .read() and .template()
+  this.sourceRoot(path.join(__dirname, 'templates'));
+};
 
-// custom statuses that aren't in colors just yet
-function pad(status) {
-  var max = 'identical'.length;
-  var delta = max - status.length;
-  return delta ? new Array(delta + 1).join(' ') + status : status;
-}
+util.inherits(WordPressGenerator, yeoman.generators.NamedBase);
 
-var statuses = {
-  update   : 'cyan',
-  remove   : 'red'
-}
+/**
+ * Initalize our generator by adding some new methods to the log function.
+ */
+WordPressGenerator.prototype.initGenerator = function () {
+  this.log.writeln('=> Intializing WordPress Generator'.bold);
+};
 
-var WPGenerator = module.exports = function Generator() {
-  yeoman.generators.Base.apply(this, arguments)
+/**
+ * Extends the logger with a .update() and a .remove() method.
+ */
+WordPressGenerator.prototype.extendLogger = function () {
+  // Add a new update() logging method
+  this.log.update = function () {
+    this.write('   update '.cyan);
+    return this.writeln.apply(this, arguments);
+  };
 
-  this.sourceRoot(path.join(__dirname, 'templates'))
-}
+  // Add a new remove() logging method
+  this.log.remove = function () {
+    this.write('   remove '.red);
+    return this.writeln.apply(this, arguments);
+  };
+};
 
-util.inherits(WPGenerator, yeoman.generators.NamedBase)
+/**
+ * Get the latest version of WordPress from GitHub.
+ */
+WordPressGenerator.prototype.findLatestWordPressVersion = function () {
+  var cb            = this.async();
+  var self          = this;
+  var latestVersion = '3.5.1';
 
-// initialize generator
-WPGenerator.prototype.initGenerator = function initGenerator() {
-  var self = this
+  this.log.writeln('=> Looking up the latest version of WordPress'.bold);
 
-  self.log.writeln('')
-  self.log.writeln('Intializing WP Generator'.bold)
+  // Try to get the latest version using the GitHub tags API
+  request('https://api.github.com/repos/WordPress/WordPress/git/refs/tags', function (err, response, body) {
+    if (!err && response.statusCode == 200) {
+      // Determine the newest tag
+      var tags      = JSON.parse(body);
+      latestVersion = tags[tags.length - 1].ref.match(/refs\/tags\/(.*)/)[1];
 
-  Object.keys(statuses).forEach(function (status) {
-    self.log[status] = function() {
-      var color = statuses[status]
-
-      self.log.write(pad(status)[color]).write(' ')
-      self.log.write(util.format.apply(util, arguments) + '\n')
-      return self.log
+      // User feedback
+      self.log.writeln('     - Latest version is ' + latestVersion);
+    } else {
+      self.log.writeln('     - Unable to determine latest version, using ' + latestVersion);
     }
-  })
-}
 
-// get the latest stable version of Wordpress
-WPGenerator.prototype.getVersion = function getVersion() {
-  var cb = this.async()
-    , self = this
-    , latestVersion = '3.5.1' // we still store the latest version to avoid throwing error
+    self.latestWordPressVersion = latestVersion;
+    cb();
+  });
+};
 
-  this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Wordpress'.bold)
+/**
+ * Get the latest stable version of Twitter Bootstrap.
+ */
+WordPressGenerator.prototype.findLatestBootstrapVersion = function () {
+  var cb            = this.async();
+  var self          = this;
+  var latestVersion = '2.3.0';
 
-  // try to get the latest version using the git tags
-  try {
-    var version = exec('git ls-remote --tags git://github.com/WordPress/WordPress.git | tail -n 1', function(err, stdout, stderr) {
-                    if (err) {
-                      self.latestVersion = latestVersion
-                    }
-                    else {
-                      var pattern = /\d\.\d[\.\d]*/ig
-                        , match = pattern.exec(stdout)
+  this.log.writeln('=> Looking up the latest version of Twitter Bootstrap'.bold);
 
-                      if (match !== null) {
-                        self.latestVersion = match[0]
-                        self.log.writeln('Latest version: '+self.latestVersion)
-                      }
-                      else {
-                        self.latestVersion = latestVersion
-                      }
-                    }
+  // Try to get the latest version using the GitHub tags API
+  request('https://api.github.com/repos/twbs/bootstrap/git/refs/tags', function (err, response, body) {
+    if (!err && response.statusCode == 200) {
+      // Determine the newest tag
+      var tags      = JSON.parse(body);
+      latestVersion = tags[tags.length - 1].ref.match(/refs\/tags\/(.*)/)[1];
 
-                    cb()
-                  })
-  }
-  catch(e) {
-    self.latestVersion = latestVersion
-    cb()
-  }
-}
+      // User feedback
+      self.log.writeln('     - Latest version is ' + latestVersion);
+    } else {
+      self.log.writeln('     - Unable to determine latest version, using ' + latestVersion);
+    }
 
-// get the latest stable version of Bootstrap
-WPGenerator.prototype.getBootstrapVersion = function getBootstrapVersion() {
-  var cb = this.async()
-    , self = this
-    , latestBootstrapVersion = '2.3.1' // we still store the latest version to avoid throwing error
+    self.latestTwitterBootstrapVersion = latestVersion;
+    cb();
+  });
+};
 
-  this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Twitter Bootstrap'.bold)
+/**
+ * Get the latest stable version of Font Awesome.
+ */
+WordPressGenerator.prototype.findLatestFontAwesomeVersion = function () {
+  var cb            = this.async();
+  var self          = this;
+  var latestVersion = '3.2.0';
 
-  // try to get the latest version using the git tags
-  try {
-    var version = exec('git ls-remote --tags git://github.com/twitter/bootstrap.git | tail -n 1', function(err, stdout, stderr) {
-                    if (err) {
-                      self.latestBootstrapVersion = latestBootstrapVersion
-                    }
-                    else {
-                      var pattern = /\d\.\d[\.\d]*/ig
-                        , match = pattern.exec(stdout)
+  this.log.writeln('=> Looking up the latest version of Font Awesome'.bold);
 
-                      if (match !== null) {
-                        self.latestBootstrapVersion = match[0]
-                        self.log.writeln('Latest version: '+self.latestBootstrapVersion)
-                      }
-                      else {
-                        self.latestBootstrapVersion = latestBootstrapVersion
-                      }
-                    }
+  // Try to get the latest version using the GitHub tags API
+  request('https://api.github.com/repos/FortAwesome/Font-Awesome/git/refs/tags', function (err, response, body) {
+    if (!err && response.statusCode == 200) {
+      // Determine the newest tag
+      var tags      = JSON.parse(body);
+      latestVersion = tags[tags.length - 1].ref.match(/refs\/tags\/(.*)/)[1];
 
-                    cb()
-                  })
-  }
-  catch(e) {
-    self.latestBootstrapVersion = latestBootstrapVersion
-    cb()
-  }
-}
+      // User feedback
+      self.log.writeln('     - Latest version is ' + latestVersion);
+    } else {
+      self.log.writeln('     - Unable to determine latest version, using ' + latestVersion);
+    }
 
-// get the latest stable version of Font Awesome
-WPGenerator.prototype.getFAVersion = function getFAVersion() {
-  var cb = this.async()
-    , self = this
-    , latestFAVersion = '3.0.2' // we still store the latest version to avoid throwing error
+    self.latestFontAwesomeVersion = latestVersion;
+    cb();
+  });
+};
 
-  this.log.writeln('')
-  this.log.writeln('Trying to get the latest stable version of Font Awesome'.bold)
+/**
+ * Try to find the config file and read the infos to set the prompts default
+ * values.
+ */
+WordPressGenerator.prototype.getConfig = function () {
+  var cb   = this.async();
+  var self = this;
 
-  // try to get the latest version using the git tags
-  try {
-    var version = exec('git ls-remote --tags git://github.com/FortAwesome/Font-Awesome.git | tail -n 1', function(err, stdout, stderr) {
-                    if (err) {
-                      self.latestFAVersion = latestFAVersion
-                    }
-                    else {
-                      var pattern = /\d\.\d[\.\d]*/ig
-                        , match = pattern.exec(stdout)
+  // Default configuration settings
+  self.defaultAuthorName = 'theREDspace';
+  self.defaultAuthorURI  = 'http://www.theredspace.com/';
+  self.defaultTheme      = 'https://github.com/theREDspace/wp_starter';
+  self.configExists      = false;
 
-                      if (match !== null) {
-                        self.latestFAVersion = match[0]
-                        self.log.writeln('Latest version: '+self.latestFAVersion)
-                      }
-                      else {
-                        self.latestFAVersion = latestFAVersion
-                      }
-                    }
-
-                    cb()
-                  })
-  }
-  catch(e) {
-    self.latestFAVersion = latestFAVersion
-    cb()
-  }
-}
-
-// try to find the config file and read the infos to set the prompts default values
-WPGenerator.prototype.getConfig = function getConfig() {
-  var cb   = this.async()
-    , self = this
-
-  self.defaultAuthorName = ''
-  self.defaultAuthorURI = ''
-  self.defaultTheme = 'https://github.com/theREDspace/wp_starter'
-  self.configExists = false
-
-  config.getConfig(function(err, data) {
+  // Attempt to load the config file
+  config.getConfig(function (err, data) {
     if (!err) {
-      self.defaultAuthorName = data.authorName || self.defaultAuthorName
-      self.defaultAuthorURI = data.authorURI || self.defaultAuthorURI
-      self.defaultTheme = data.theme || self.defaultTheme
+      self.defaultAuthorName = data.authorName || self.defaultAuthorName;
+      self.defaultAuthorURI  = data.authorURI || self.defaultAuthorURI;
+      self.defaultTheme      = data.theme || self.defaultTheme;
 
       if (data.authorName && data.authorURI && data.theme) {
-        self.configExists = true
+        self.configExists = true;
       }
     }
 
-    cb()
-  })
-}
+    cb();
+  });
+};
 
-WPGenerator.prototype.askFor = function askFor() {
-  var cb   = this.async()
-    , self = this
+/**
+ * Ask the user for input regarding their WordPress installation.
+ */
+WordPressGenerator.prototype.askFor = function () {
+  var cb   = this.async();
+  var self = this;
 
-    this.log.writeln('')
-    this.log.writeln('Customize your WP instance'.bold)
+  this.log.writeln('\nConfigure WordPress Installation:\n'.underline.bold);
 
-    self.themeNameOriginal = 'mytheme'
-    self.themeName = 'mytheme'
-    self.themeOriginalURL = self.defaultTheme
-    self.themeBoilerplate = self.defaultTheme
-    self.wordpressVersion = self.latestVersion
-    //self.usejQuery = props.usejQuery
-    self.authorName = self.defaultAuthorName
-    self.authorURI = self.defaultAuthorURI
-    
-    self.bootstrapVersion = self.latestBootstrapVersion
-    self.fontAwesomeVersion = self.latestFAVersion
+  // Get the default values for our below prompts
+  self.themeNameOriginal  = 'mytheme';
+  self.themeName          = 'mytheme';
+  self.themeOriginalURL   = self.defaultTheme;
+  self.themeBoilerplate   = self.defaultTheme;
+  self.wordpressVersion   = self.latestVersion;
+  self.authorName         = self.defaultAuthorName;
+  self.authorURI          = self.defaultAuthorURI;
+  self.bootstrapVersion   = self.latestTwitterBootstrapVersion;
+  self.fontAwesomeVersion = self.latestFontAwesomeVersion;
 
-    var prompts = [{
-          name: 'themeName',
-          message: 'Name of the theme you want to use: ',
-          default: 'mytheme'
-      },
-      {
-          name: 'wordpressVersion',
-          message: 'Which version of Wordpress do you want?',
-          default: self.latestVersion
-      },
-      // {
-      //     name: 'usejQuery',
-      //     message: 'Would you like to use jQuery?',
-      //     default: 'Y/n'
-      // },
-      
-      // Removed by LD -- not enough of our projects are using require at the moment,
-      // so I have removed this for now.
-
-      // {
-      //     name: 'includeRequireJS',
-      //     message: 'Would you like to include RequireJS (for AMD support)?',
-      //     default: 'Y/n',
-      //     warning: 'Yes: RequireJS will be placed into the JavaScript vendor directory.'
-      // },
-      {
-          name: 'themeBoilerplate',
-          message: 'Starter theme (please provide a github link): ',
-          default: self.defaultTheme
-      },
-      /*{
-          name: 'themeNamespace',
-          message: 'Theme Namespace: ',
-          default: self.defaultTheme
-      },*/
-      {
-          name: 'authorName',
-          message: 'Author name: ',
-          default: self.defaultAuthorName
-      },
-      {
-          name: 'authorURI',
-          message: 'Author URI: ',
-          default: self.defaultAuthorURI
-      },
-      {
-          name: 'siteUrl',
-          message: '\r\nSet up your WP Instance'.underline + '\r\nSite URL: ',
-          default: ''
-      },
-      {
-          name: 'siteTitle',
-          message: 'Site Title: ',
-          default: ''
-      },
-      {
-          name: 'adminUser',
-          message: 'Admin Username: '
-      },
-      {
-          name: 'adminEmail',
-          message: 'Admin Email: '
-      },
-      {
-          name: 'adminPass',
-          message: 'Admin Password: '
-      },
-      {
-          name: 'dbtable',
-          message: '\r\nSet up your WP Database'.underline + '\r\nDatabase Name: ',
-          default: 'wordpress'
-      },
-      {
-          name: 'dbprefix',
-          message: 'Database Prefix: ',
-          default: 'wp_'
-      },
-      {
-          name: 'dbuser',
-          message: 'Database Username: '
-      },
-      {
-          name: 'dbpass',
-          message: 'Database Password: '
-      },
-      ]
-      
-
-  this.prompt(prompts, function(e, props) {
-    if(e) { return self.emit('error', e) }
-
-    // set the property to parse the gruntfile
-    self.themeNameOriginal = props.themeName
-    self.themeName = props.themeName.replace(/\ /g, '').toLowerCase()
-    self.themeOriginalURL = props.themeBoilerplate
-    self.themeBoilerplate = props.themeBoilerplate
-    self.wordpressVersion = props.wordpressVersion
-    //self.includeRequireJS = (/y/i).test(props.includeRequireJS)
-    self.authorName = props.authorName
-    self.authorURI = props.authorURI
-    self.dbtable = props.dbtable
-    self.dbuser = props.dbuser
-    self.dbpass = props.dbpass
-    self.dbprefix = props.dbprefix
-    self.siteUrl = props.siteUrl
-    self.siteTitle = props.siteTitle
-    self.adminUser = props.adminUser
-    self.adminPass = props.adminPass
-    self.adminEmail = props.adminEmail
-
-    // check if the user only gave the repo url or the entire url with /tarball/{branch}
-    var tarballLink = (/[.]*tarball\/[.]*/).test(self.themeBoilerplate)
-    if (!tarballLink) {
-      // if the user gave the repo url we add the end of the url. we assume he wants the master branch
-      var lastChar = self.themeBoilerplate.substring(self.themeBoilerplate.length - 1)
-      if (lastChar === '/') {
-        self.themeBoilerplate = self.themeBoilerplate+'tarball/master'
-      }
-      else {
-        self.themeBoilerplate = self.themeBoilerplate+'/tarball/master'
-      }
+  var prompts = [
+    {
+      name    : 'themeName',
+      message : 'Name your starter theme: ',
+      default : 'mytheme'
+    }, {
+      name    : 'wordpressVersion',
+      message : 'WordPress Version: ',
+      default : self.latestWordPressVersion
+    }, {
+      name    : 'themeBoilerplate',
+      message : 'Starter theme (please provide a GitHub link): ',
+      default : self.defaultTheme
+    }, {
+      name    : 'authorName',
+      message : 'Author Name: ',
+      default : self.defaultAuthorName
+    }, {
+      name    : 'authorURI',
+      message : 'Author URI: ',
+      default : self.defaultAuthorURI
+    }, {
+      name    : 'siteUrl',
+      message : '\nConfigure WordPress Settings:'.underline.bold + '\n\nSite URL: ',
+      default : 'http://localhost'
+    }, {
+      name    : 'siteTitle',
+      message : 'Site Title: ',
+      default : 'WordPress'
+    }, {
+      name    : 'adminUser',
+      message : 'Admin Username: ',
+      default : 'admin'
+    }, {
+      name    : 'adminEmail',
+      message : 'Admin Email: ',
+      default : 'admin@localhost'
+    }, {
+        name    : 'adminPass',
+        message : 'Admin Password: ',
+        default : 'admin'
+    }, {
+      name    : 'dbtable',
+      message : '\nConfigure WordPress Database Settings: '.underline.bold + '\n\nDatabase Name: ',
+      default : 'wordpress'
+    }, {
+      name    : 'dbprefix',
+      message : 'Database Prefix: ',
+      default : 'wp_'
+    }, {
+      name    : 'dbuser',
+      message : 'Database Username: ',
+      default : 'wordpress'
+    }, {
+      name    : 'dbpass',
+      message : 'Database Password: '
     }
-    
-    // create the config file it does not exist
+  ];
+
+  this.prompt(prompts, function (err, props) {
+    if (err) {
+      return self.emit('error', err);
+    }
+
+    // Set the property to parse the gruntfile
+    self.themeNameOriginal = props.themeName;
+    self.themeName         = props.themeName.replace(/\ /g, '').toLowerCase();
+    self.themeOriginalURL  = props.themeBoilerplate;
+    self.themeBoilerplate  = props.themeBoilerplate;
+    self.wordpressVersion  = props.wordpressVersion;
+    self.authorName        = props.authorName;
+    self.authorURI         = props.authorURI;
+    self.dbtable           = props.dbtable;
+    self.dbuser            = props.dbuser;
+    self.dbpass            = props.dbpass;
+    self.dbprefix          = props.dbprefix;
+    self.siteUrl           = props.siteUrl;
+    self.siteTitle         = props.siteTitle;
+    self.adminUser         = props.adminUser;
+    self.adminPass         = props.adminPass;
+    self.adminEmail        = props.adminEmail;
+
+    // Just get the user & repository part of the link
+    var repoParts = self.themeBoilerplate.match(/github\.com\/(.*?)\/([^/]+)/i);
+
+    // Check for a branch name
+    var branch = self.themeBoilerplate.match(/\/tree\/([^/]+)/i);
+    branch = branch ? branch[1] : 'master';
+
+    // Final GitHub link
+    self.themeBoilerplate = 'https://github.com/' + repoParts[1] + '/' + repoParts[2] + '/archive/' + branch + '.tar.gz';
+
+    // Create the config file it does not exist
     if (!self.configExists) {
       var values = {
-        authorName: self.authorName
-      , authorURI:  self.authorURI
-      , themeUrl:   self.themeOriginalURL
-      }
+        authorName : self.authorName,
+        authorURI  : self.authorURI,
+        themeUrl   : self.themeOriginalURL
+      };
+
       config.createConfig(values, cb)
-    }
-    else {
+    } else {
       cb()
     }
   })
-}
+};
 
-// download the framework and unzip it in the project app/
-WPGenerator.prototype.createApp = function createApp(cb) {
-  var cb   = this.async()
-    , self = this 
+/**
+ * Download the framework and unzip it in the project app/
+ */
+WordPressGenerator.prototype.startInstallProcess = function () {
+  this.log.writeln('\nStarting installation process, this may take a while. Feel free to grab a coffee!\n'.bold);
+};
 
-  this.log.writeln('');
-  this.log.writeln('Downloading Wordpress version ' + self.wordpressVersion)
-  this.tarball('https://github.com/WordPress/WordPress/tarball/' + self.wordpressVersion, 'app', cb)
-}
+/**
+ * Download the framework and unzip it in the project app/
+ */
+WordPressGenerator.prototype.downloadWordPressTarball = function () {
+  this.log.writeln('=> Downloading and extracting WordPress'.bold);
+  this.tarball('https://github.com/WordPress/WordPress/archive/' + this.wordpressVersion + '.tar.gz', 'app', this.async());
+};
 
-// remove the basic theme and create a new one
-WPGenerator.prototype.createTheme = function createTheme() {
-  var cb   = this.async()
-    , self = this
+/**
+ * Remove all of the default themes that come with WordPress.
+ */
+WordPressGenerator.prototype.removeWordPressDefaultThemes = function () {
+  var self = this;
+  var cb   = this.async();
 
-  this.log.writeln('Removing default themes')
-  // remove the existing themes
-  fs.readdir('app/wp-content/themes', function(err, files) {
-    if (typeof files != 'undefined' && files.length != 0) {
-      files.forEach(function(file) {
-        var pathFile = fs.realpathSync('app/wp-content/themes/'+file)
-          , isDirectory = fs.statSync(pathFile).isDirectory()
+  this.log.writeln('=> Removing default WordPress themes'.bold);
 
-        if (isDirectory) {
-          rimraf.sync(pathFile)
-          self.log.writeln('Removing ' + pathFile)
+  fs.readdir('app/wp-content/themes', function (err, files) {
+    if (files !== undefined && files.length != 0) {
+      files.forEach(function (theme) {
+        // Only delete directories, mostly so we ignore index.php
+        if (fs.statSync('app/wp-content/themes/' + theme).isDirectory()) {
+          rimraf.sync('app/wp-content/themes/' + theme);
+          self.log.writeln('    - Removing the theme: ' + theme);
         }
-      })
+      });
     }
 
-    self.log.writeln('')
-    self.log.writeln('Downloading the starter theme')
+    cb();
+  });
+};
 
-    // create the theme
-    self.tarball(self.themeBoilerplate, 'app/wp-content/themes/'+self.themeName, cb)
-  })
-}
+/**
+ * Install the chosen starter theme.
+ */
+WordPressGenerator.prototype.installStarterTheme = function () {
+  this.log.writeln('=> Downloading & extracting your starter theme'.bold);
 
-// grab bootstrap
-WPGenerator.prototype.createBootstrap = function createBootstrap() {
-  var cb   = this.async()
-    , self = this
+  // Download and extract the starter theme
+  this.tarball(this.themeBoilerplate, 'app/wp-content/themes/' + this.themeName, this.async());
+};
 
-  this.log.writeln('Downloading Twitter Bootstrap ' + self.bootstrapVersion)
-  this.tarball('https://github.com/twitter/bootstrap/tarball/v' + self.bootstrapVersion, 'src/bootstrap', cb)
-}
+/**
+ * Grab Twooter Bootstrap.
+ */
+WordPressGenerator.prototype.installTwitterBootstrap = function () {
+  this.log.writeln('=> Downloading & extracting Twitter Bootstrap'.bold);
 
-// grab fontawesome
-WPGenerator.prototype.createFontAwesome = function createFontAwesome() {
-  var cb   = this.async()
-    , self = this
+  // Download and extract Twitter Bootstrap
+  this.tarball('https://github.com/twbs/bootstrap/archive/' + this.bootstrapVersion + '.tar.gz', 'src/bootstrap', this.async());
+};
 
-  this.log.writeln('Downloading Font Awesome ' + self.fontAwesomeVersion)
-  this.tarball('https://github.com/FortAwesome/Font-Awesome/tarball/v' + self.fontAwesomeVersion, 'src/font-awesome', cb)
-}
+/**
+ * Grab Font Awesome, the Twitter Bootstrap icon font.
+ */
+WordPressGenerator.prototype.installFontAwesome = function () {
+  this.log.writeln('=> Downloading & extracting Font Awesome'.bold);
 
-// grab less elements
-WPGenerator.prototype.createLessElements = function createLessElements() {
-  var cb   = this.async()
-    , self = this
+  // Download and extract FontAwesome
+  this.tarball('https://github.com/FortAwesome/Font-Awesome/archive/' + this.fontAwesomeVersion + '.tar.gz', 'src/font-awesome', this.async());
+};
 
-  this.log.writeln('Downloading LESS Elements')
-  this.tarball('https://github.com/dmitryf/elements/tarball/master', 'src/elements', cb)
-}
+/**
+ * Grab LESS Elements, a set of useful mixins for LESS.
+ */
+WordPressGenerator.prototype.installLessElements = function () {
+  this.log.writeln('=> Downloading & extracting LESS Elements'.bold);
 
-WPGenerator.prototype.configureBootstrap = function configureBootstrap() {
-  var self = this
-    , sourceRoot = this.sourceRoot()
+  // Download and extract LESS Elements
+  this.tarball('https://github.com/dmitryf/elements/archive/master.tar.gz', 'src/elements', this.async());
+};
 
-  self.sourceRoot(self.destinationRoot());
+/**
+ * Grab Twitter Bootstrap
+ */
+WordPressGenerator.prototype.configureTwitterBootstrap = function () {
+  this.log.writeln('=> Configuring Twitter Bootstrap'.bold)
 
-  self.log.writeln('Configuring Bootstrap')
-  
+  // Source root
+  var sourceRoot = this.sourceRoot();
+  this.sourceRoot(this.destinationRoot());
+
+  // Make some directories
   this.mkdir('src/less/includes')
-  this.mkdir('app/wp-content/themes/' + self.themeName + '/js/bootstrap')
-  this.mkdir('app/wp-content/themes/' + self.themeName + '/font')
+  this.mkdir('app/wp-content/themes/' + this.themeName + '/js/bootstrap')
+  this.mkdir('app/wp-content/themes/' + this.themeName + '/font')
 
-  // less
-  self.directory('src/bootstrap/less', 'src/less/includes')
-  self.directory('src/font-awesome/less', 'src/less/includes')
-  self.copy('src/elements/elements.less', 'src/less/includes/elements.less')
+  // LESS
+  this.directory('src/bootstrap/less', 'src/less/includes')
+  this.directory('src/font-awesome/less', 'src/less/includes')
+  this.copy('src/elements/elements.less', 'src/less/includes/elements.less')
 
-  // js
-  self.directory('src/bootstrap/js', 'app/wp-content/themes/' + self.themeName + '/js/bootstrap')
-  
-  // fonts
-  self.directory('src/font-awesome/font', 'app/wp-content/themes/' + self.themeName + '/font')
+  // JavaScript
+  this.directory('src/bootstrap/js', 'app/wp-content/themes/' + this.themeName + '/js/bootstrap')
 
-  // reset source root
-  self.sourceRoot(sourceRoot)
-}
+  // Fonts
+  this.directory('src/font-awesome/font', 'app/wp-content/themes/' + this.themeName + '/font')
 
-// clean up the bad folders
-WPGenerator.prototype.cleanInstall = function cleanInstall() {
+  // Reset source root
+  this.sourceRoot(sourceRoot)
+};
+
+/**
+ * Remove the folders and files that are unneccesary.
+ */
+WordPressGenerator.prototype.cleanInstall = function () {
   var self = this
 
-  self.log.writeln('')
-  self.log.writeln('Cleaning unneccessary files'.bold)
+  self.log.writeln('');
+  self.log.writeln('=> Removing unneccesary files'.bold);
+
   var dirs = [
     'src/bootstrap',
     'src/font-awesome',
     'src/elements',
-  ]
+  ];
 
-  dirs.forEach(function(dir) {
-    var pathFile = fs.realpathSync(dir)
-      , isDirectory = fs.statSync(pathFile).isDirectory()
+  dirs.forEach(function (dir) {
+    var pathFile  = fs.realpathSync(dir),
+      isDirectory = fs.statSync(pathFile).isDirectory();
 
     if (isDirectory) {
-      rimraf.sync(pathFile)
-      self.log.remove(dir)
+      rimraf.sync(pathFile);
+      self.log.remove(dir);
     }
-  })
-}
+  });
+};
 
-// // replace bootstrap sprites with font-awesome
-WPGenerator.prototype.bootAwesome = function bootAwesome() {
-  var cb = this.async()
-    , self = this
+/**
+ * Setup Twitter Bootstrap to use Font Awesome.
+ */
+WordPressGenerator.prototype.integrateFontAwesome = function () {
+  var cb       = this.async();
+  var self     = this;
 
-  self.log.writeln('')
-  self.log.writeln('Updating Bootstrap to use Font Awesome'.bold)
-  
-  //function bootUp() {
-    var pathFile = 'src/less/includes/bootstrap.less'
-    fs.readFile(pathFile, 'utf8', function(err, data) {
-      if (err) throw err
-      
-      var result = data.replace('sprites.less', 'font-awesome.less')
+  self.log.writeln('\n=> Integrating Font Awesome with Twitter Bootstrap'.bold);
 
-      fs.writeFile(pathFile, result, 'utf8', function(werr) {
-        if (werr) {
-          self.log.writeln('Error')
-          self.log.writeln(werr)
-        } else {
-          self.log.update(pathFile)
-          cb()
-        }
-      })
-    })
-  //}
+  fs.readFile('src/less/includes/bootstrap.less', 'utf8', function (err, data) {
+    if (err) {
+      throw err;
+    }
 
-  //bootUp()
-}
+    // Use Font Awesome instead of the default icon sprites
+    var result = data.replace('sprites.less', 'font-awesome.less');
 
-// build the CSS file for the theme
-WPGenerator.prototype.createThemeStyle = function createThemeStyle() {
-  this.log.writeln('')
-  this.log.writeln('Building base theme less file'.bold)
-  this.template('style.less', 'src/less/style.less')
-  this.log.create('style.less')
-}
-
-// build database
-WPGenerator.prototype.createDatabase = function createDatabase() {
-
-  var cb = this.async()
-    , self = this
-
-  self.log.writeln('')  
-  self.log.writeln('Creating database'.bold)
-
-  function buildDB() {
-    var connection  = mysql.createConnection({
-      host     : 'localhost',
-      user     : self.dbuser,
-      password : self.dbpass,
-    });
-
-    connection.connect(function(err) {
-      if (err) {
-        self.log.error('Error connecting to database, please create the table manually')
+    // Write the update files
+    fs.writeFile('src/less/includes/bootstrap.less', result, 'utf8', function (werr) {
+      if (werr) {
+        self.log.error(werr);
+      } else {
+        self.log.update('src/less/includes/bootstrap.less');
+        cb();
       }
+    });
+  });
+};
 
-      self.log.info('Connected to MySQL')
-      connection.query('CREATE DATABASE ' + self.dbtable, function(err, result) {
-        if (err) {
-          self.log.error('Could not create database')
-        }
+/**
+ * Create our style.less file in the source directory.
+ */
+WordPressGenerator.prototype.createThemeStyle = function () {
+  this.log.writeln('\n=> Building base theme less file'.bold);
+  this.log.create('style.less');
 
-        self.log.create(self.dbtable + 'table')
-        connection.end(function() {
+  // Copy the default style.less to our project
+  this.template('style.less', 'src/less/style.less')
+};
+
+/**
+ * Create the database for WordPress.
+ */
+WordPressGenerator.prototype.createDatabase = function () {
+  var cb   = this.async();
+  var self = this;
+
+  self.log.writeln('\n=> Creating WordPress database'.bold)
+
+  var connection  = mysql.createConnection({
+    host     : 'localhost',
+    user     : self.dbuser,
+    password : self.dbpass,
+  });
+
+  connection.connect(function (err) {
+    if (err) {
+      self.log.error('Error connecting to MySQL, please create the database manually');
+    } else {
+      connection.query('CREATE DATABASE ' + self.dbtable, function (err, result) {
+        self.log.create(self.dbtable);
+
+        connection.end(function () {
           cb()
-        })
-      })
-    })
-  }
-
-  buildDB()
+        });
+      });
+    }
+  });
 }
 
-// TODO: Improve database error checking
+/**
+ * Generate the files to use Yeoman and the git related files.
+ */
+WordPressGenerator.prototype.createYeomanFiles = function () {
+  this.log.writeln('\n=> Building Yeoman Templates'.bold)
+  this.log.info('     - Generating unique phrases')
 
-// // generate the files to use Yeoman and the git related files
- WPGenerator.prototype.createYeomanFiles = function createYeomanFiles() {
-  this.log.writeln('')
-  this.log.writeln('Building Yeoman Templates'.bold)
-
-  this.log.info('Generating unique phrases')
-
-  this.authKey = uuid.v4()
-  this.secureAuthKey = uuid.v4()
-  this.loggedInKey = uuid.v4()
-  this.secureAuthKey = uuid.v4()
-  this.nonceKey = uuid.v4()
-  this.authSalt = uuid.v4()
+  // Generate unique salts & keys
+  this.authKey        = uuid.v4()
+  this.secureAuthKey  = uuid.v4()
+  this.loggedInKey    = uuid.v4()
+  this.secureAuthKey  = uuid.v4()
+  this.nonceKey       = uuid.v4()
+  this.authSalt       = uuid.v4()
   this.secureAuthSalt = uuid.v4()
-  this.loggedInSalt = uuid.v4()
-  this.nonceSalt = uuid.v4()
-  
+  this.loggedInSalt   = uuid.v4()
+  this.nonceSalt      = uuid.v4()
+
+  // Copy over templates
   this.template('Gruntfile.js')
   this.template('bowerrc', '.bowerrc')
   this.template('wp-config.php', 'app/wp-config.php')
   this.template('package.json', 'package.json')
   this.copy('gitignore', '.gitignore')
   this.copy('gitattributes', '.gitattributes')
-}
+};
 
-// configure grunt
-WPGenerator.prototype.installGrunt = function installGrunt() {
-  var cb = this.async()
-    , self = this
-
-  self.log.writeln('')
-  self.log.writeln('Installing Grunt'.bold)
-    
+/**
+ * Use NPM to install project dependencies from our package.json file.
+ */
+WordPressGenerator.prototype.installNpmDependencies = function () {
+  var cb  = this.async();
   var npm = spawn('npm', ['install'], { stdio: 'inherit' });
 
-  npm.on('close', function(data) {
+  this.log.writeln('\n=> Installing NPM dependencies'.bold)
+
+  // Don't continue until NPM is done
+  npm.on('close', function (data) {
     cb();
-  })
-}
+  });
+};
 
-// run grunt build (so we have a .css file)
-WPGenerator.prototype.buildStylesheet = function buildStylesheet() {
-  var cb = this.async()
-    , self = this
-
-  self.log.writeln('')
-  self.log.writeln('Building Stylesheet'.bold)
-    
+/**
+ * Run our grunt build process.
+ */
+WordPressGenerator.prototype.runGruntBuild = function () {
+  var cb    = this.async();
   var grunt = spawn('grunt', ['less'], { stdio: 'inherit' });
 
-  grunt.on('close', function(data) {
+  this.log.writeln('\n=> Running Grunt Build'.bold)
+
+  // Don't continue until the grunt build is done
+  grunt.on('close', function (data) {
     cb();
-  })
+  });
 }
 
-WPGenerator.prototype.checkWPCLI = function checkWPCLI() {
-  var cb = this.async()
-    , self = this
+/**
+ * See if the wp-cli library is present on the user's system.
+ */
+WordPressGenerator.prototype.detectWordPressCli = function () {
+  var cb    = this.async();
+  var self = this;
 
-  this.log.writeln('')
-  this.log.writeln('Checking for WP-CLI'.bold)
+  this.log.writeln('\n=> Checking for wp-cli'.bold)
 
-  try {
-    var version = exec(
-      'wp help', 
-      function(err, stdout, stderr) {
-        if (err) {
-          self.log.error('could not find wp-cli, skipping automatedcd  wp install')
-          self.hasCLI = false;
-        }
-        else {
-          self.hasCLI = true;
-          self.log.ok('found instance of wp-cli')
-        }
+  exec('wp help', function (err, stdout, stderr) {
+    if (err) {
+      self.log.error('Could not find wp-cli, skipping automated installation');
+      self.hasCLI = false;
+    } else {
+      self.hasCLI = true;
+      self.log.ok('Found wp-cli, proceeding with automated installation')
+    }
 
-        cb()
-      })
-  }
-  catch(e) {
-    self.log.error('could not find wp-cli, skipping automated wp install')
-    cb()
-  }
-}
+    cb();
+  });
+};
 
-WPGenerator.prototype.installWP = function installWP() {
-  var cb = this.async()
-    , self = this
+/**
+ * If the wp-cli library is present, automatically install and configure
+ * WordPress.
+ */
+WordPressGenerator.prototype.installWordPress = function () {
+  var cb   = this.async();
+  var self = this;
 
   if (self.hasCLI) {
-    this.log.writeln('')
-    this.log.writeln('Installing WordPress'.bold)
+    this.log.writeln('\n=> Installing WordPress'.bold)
 
-    /**
-      wp core install 
-      --url=<url> 
-      --title=<site-title> 
-      [--admin_name=<username>] 
-      --admin_email=<email> 
-      --admin_password=<password>
-    **/
-
-    var cli = spawn(
-      'wp', 
-      [
+    // Spawn a wp-cli process to install WordPress
+    var cli = spawn('wp', [
         'core',
         'install',
         '--url=' + self.siteUrl,
@@ -649,35 +597,33 @@ WPGenerator.prototype.installWP = function installWP() {
         '--admin_name=' + self.adminUser,
         '--admin_email=' + self.adminEmail,
         '--admin_password=' + self.adminPass
-      ],
-      {
+      ], {
         stdio: 'inherit',
         cwd: 'app'
       }
-    )
+    );
 
+    // Don't continue until WordPress is done installing
     cli.on('close', function(data) {
-      cb()
-    })
+      cb();
+    });
 
   } else {
-    cb()
+    cb();
   }
-}
+};
 
-WPGenerator.prototype.endGenerator = function endGenerator() {
-  this.log.writeln('')
-  this.log.writeln('... and we\'re done!'.bold)
+/**
+ * We are done generating stuff.
+ */
+WordPressGenerator.prototype.endGenerator = function () {
+  this.log.writeln('\n... and we\'re done!'.bold);
 
   if (!this.hasCLI) {
-    this.log.writeln('')
-    this.log.writeln('Now you just need to install Wordpress the usual way,')
-    this.log.writeln('if you installed wp-cli (wp-cli.org), this task could be automated for you')
+    this.log.writeln('\nNow you just need to install Wordpress the usual way,');
+    this.log.writeln('if you installed wp-cli (wp-cli.org), this task could be automated for you');
   }
 
-  this.log.writeln('')
-  this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!')
-  
-
-  this.log.writeln('')
-}
+  this.log.writeln('');
+  this.log.writeln('Don\'t forget to activate the new theme in the admin panel, and then you can start coding!');
+};
