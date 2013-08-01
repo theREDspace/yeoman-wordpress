@@ -333,6 +333,15 @@ WordPressGenerator.prototype.removeWordPressDefaultThemes = function () {
 };
 
 /**
+ * Remove the default hello dolly WordPress plugin.
+ */
+WordPressGenerator.prototype.removeWordPressDefaultPlugins = function () {
+  this.log.writeln('=> Removing hello dolly plugin '.bold);
+
+  fs.unlinkSync('app/wp-content/plugins/hello.php');
+};
+
+/**
  * Install the chosen starter theme.
  */
 WordPressGenerator.prototype.installStarterTheme = function () {
