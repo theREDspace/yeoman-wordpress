@@ -88,7 +88,7 @@ WordPressGenerator.prototype.findLatestWordPressVersion = function () {
 WordPressGenerator.prototype.findLatestBootstrapVersion = function () {
   var cb            = this.async();
   var self          = this;
-  var latestVersion = '2.3.0';
+  var latestVersion = 'v2.3.2';
 
   this.log.writeln('=> Looking up the latest version of Twitter Bootstrap'.bold);
 
@@ -251,6 +251,30 @@ WordPressGenerator.prototype.askFor = function () {
     message : 'Database Password: '
   }];
 
+  // Install some default plugins
+  var plugin_prompts = [{
+    type    : 'checkbox',
+    name    : 'plugins',
+    message : 'Which plugins would you like to install? ',
+    choices : [{
+      name    : 'Google XML Sitemaps',
+      value   : 'google-sitemap-generator',
+      checked :  true
+    }, {
+      name    : 'Jetpack by WordPress.com',
+      value   : 'jetpack',
+      checked : false
+    }, {
+      name    : 'Akismet',
+      value   : 'akismet',
+      checked : false
+    }, {
+      name    : 'Members',
+      value   : 'members',
+      checked : false
+    }]
+  }];
+
   // Run each prompt
   async.series({
     general: function (callback) {
@@ -270,9 +294,15 @@ WordPressGenerator.prototype.askFor = function () {
       self.prompt(database_prompts, function (props) {
         callback(null, props);
       });
+    },
+    plugins: function (callback) {
+      self.log.writeln('\nConfigure WordPress Plugins:\n'.underline.bold);
+      self.prompt(plugin_prompts, function (props) {
+        callback(null, props);
+      });
     }
   }, function (err, results) {
-    var props = _.merge(results.general, results.settings, results.database);
+    var props = _.merge(results.general, results.settings, results.database, results.plugins);
 
     // Set the property to parse the gruntfile
     self.themeNameOriginal = props.themeName;
@@ -291,6 +321,7 @@ WordPressGenerator.prototype.askFor = function () {
     self.adminUser         = props.adminUser;
     self.adminPass         = props.adminPass;
     self.adminEmail        = props.adminEmail;
+    self.plugins           = props.plugins;
 
     // Just get the user & repository part of the link
     var repoParts = self.themeBoilerplate.match(/github\.com\/(.*?)\/([^/]+)/i);
@@ -376,6 +407,28 @@ WordPressGenerator.prototype.installStarterTheme = function () {
 };
 
 /**
+ * Install the selected plugins.
+ */
+WordPressGenerator.prototype.installPlugins = function () {
+  var cb      = this.async();
+  var self    = this;
+  var counter = 0;
+
+  this.log.writeln('=> Downloading & extracting plugins'.bold);
+
+  // Download and extract the starter theme
+  this.plugins.forEach(function (plugin) {
+    self.fetch('http://downloads.wordpress.org/plugin/' + plugin + '.zip', 'app/wp-content/plugins/' + plugin + '.zip', function () {
+      counter++;
+
+      if (counter === self.plugins.length) {
+        cb();
+      }
+    });
+  });
+};
+
+/**
  * Grab Twooter Bootstrap.
  */
 WordPressGenerator.prototype.installTwitterBootstrap = function () {
@@ -436,32 +489,6 @@ WordPressGenerator.prototype.configureTwitterBootstrap = function () {
 };
 
 /**
- * Remove the folders and files that are unneccesary.
- */
-WordPressGenerator.prototype.cleanInstall = function () {
-  var self = this
-
-  self.log.writeln('');
-  self.log.writeln('=> Removing unneccesary files'.bold);
-
-  var dirs = [
-    'src/bootstrap',
-    'src/font-awesome',
-    'src/elements',
-  ];
-
-  dirs.forEach(function (dir) {
-    var pathFile  = fs.realpathSync(dir),
-      isDirectory = fs.statSync(pathFile).isDirectory();
-
-    if (isDirectory) {
-      rimraf.sync(pathFile);
-      self.log.remove(dir);
-    }
-  });
-};
-
-/**
  * Setup Twitter Bootstrap to use Font Awesome.
  */
 WordPressGenerator.prototype.integrateFontAwesome = function () {
@@ -519,12 +546,13 @@ WordPressGenerator.prototype.createDatabase = function () {
   connection.connect(function (err) {
     if (err) {
       self.log.error('Error connecting to MySQL, please create the database manually');
+      cb();
     } else {
       connection.query('CREATE DATABASE ' + self.dbtable, function (err, result) {
         self.log.create(self.dbtable);
 
         connection.end(function () {
-          cb()
+          cb();
         });
       });
     }
