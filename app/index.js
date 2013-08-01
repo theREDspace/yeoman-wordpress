@@ -1,6 +1,8 @@
 'use strict';
 
 // Dependencies
+var _       = require('lodash');
+var async   = require('async');
 var util    = require('util');
 var path    = require('path');
 var fs      = require('fs');
@@ -173,8 +175,6 @@ WordPressGenerator.prototype.askFor = function () {
   var cb   = this.async();
   var self = this;
 
-  this.log.writeln('\nConfigure WordPress Installation:\n'.underline.bold);
-
   // Get the default values for our below prompts
   self.themeNameOriginal  = 'mytheme';
   self.themeName          = 'mytheme';
@@ -186,69 +186,93 @@ WordPressGenerator.prototype.askFor = function () {
   self.bootstrapVersion   = self.latestTwitterBootstrapVersion;
   self.fontAwesomeVersion = self.latestFontAwesomeVersion;
 
-  var prompts = [
-    {
-      name    : 'themeName',
-      message : 'Name your starter theme: ',
-      default : 'mytheme'
-    }, {
-      name    : 'wordpressVersion',
-      message : 'WordPress Version: ',
-      default : self.latestWordPressVersion
-    }, {
-      name    : 'themeBoilerplate',
-      message : 'Starter theme (please provide a GitHub link): ',
-      default : self.defaultTheme
-    }, {
-      name    : 'authorName',
-      message : 'Author Name: ',
-      default : self.defaultAuthorName
-    }, {
-      name    : 'authorURI',
-      message : 'Author URI: ',
-      default : self.defaultAuthorURI
-    }, {
-      name    : 'siteUrl',
-      message : '\nConfigure WordPress Settings:'.underline.bold + '\n\nSite URL: ',
-      default : 'http://localhost'
-    }, {
-      name    : 'siteTitle',
-      message : 'Site Title: ',
-      default : 'WordPress'
-    }, {
-      name    : 'adminUser',
-      message : 'Admin Username: ',
-      default : 'admin'
-    }, {
-      name    : 'adminEmail',
-      message : 'Admin Email: ',
-      default : 'admin@localhost'
-    }, {
-        name    : 'adminPass',
-        message : 'Admin Password: ',
-        default : 'admin'
-    }, {
-      name    : 'dbtable',
-      message : '\nConfigure WordPress Database Settings: '.underline.bold + '\n\nDatabase Name: ',
-      default : 'wordpress'
-    }, {
-      name    : 'dbprefix',
-      message : 'Database Prefix: ',
-      default : 'wp_'
-    }, {
-      name    : 'dbuser',
-      message : 'Database Username: ',
-      default : 'wordpress'
-    }, {
-      name    : 'dbpass',
-      message : 'Database Password: '
-    }
-  ];
+  // General settings prompts
+  var general_prompts = [{
+    type    : 'input',
+    name    : 'themeName',
+    message : 'Name your starter theme: ',
+    default : 'mytheme'
+  }, {
+    name    : 'wordpressVersion',
+    message : 'WordPress Version: ',
+    default : self.latestWordPressVersion
+  }, {
+    name    : 'themeBoilerplate',
+    message : 'Starter theme (please provide a GitHub link): ',
+    default : self.defaultTheme
+  }, {
+    name    : 'authorName',
+    message : 'Author Name: ',
+    default : self.defaultAuthorName
+  }, {
+    name    : 'authorURI',
+    message : 'Author URI: ',
+    default : self.defaultAuthorURI
+  }];
 
-  this.prompt(prompts, function (err, props) {
-    if (err) {
-      return self.emit('error', err);
+  // WordPress ettings prompts
+  var setting_prompts = [{
+    name    : 'siteUrl',
+    message : 'Site URL: ',
+    default : 'http://localhost'
+  }, {
+    name    : 'siteTitle',
+    message : 'Site Title: ',
+    default : 'WordPress'
+  }, {
+    name    : 'adminUser',
+    message : 'Admin Username: ',
+    default : 'admin'
+  }, {
+    name    : 'adminEmail',
+    message : 'Admin Email: ',
+    default : 'admin@localhost'
+  }, {
+      name    : 'adminPass',
+      message : 'Admin Password: ',
+      default : 'admin'
+  }];
+
+  // Database info prompts
+  var database_prompts = [{
+    name    : 'dbtable',
+    message : 'Database Name: ',
+    default : 'wordpress'
+  }, {
+    name    : 'dbprefix',
+    message : 'Database Prefix: ',
+    default : 'wp_'
+  }, {
+    name    : 'dbuser',
+    message : 'Database Username: ',
+    default : 'wordpress'
+  }, {
+    name    : 'dbpass',
+    message : 'Database Password: '
+  }];
+
+  // Run each prompt
+  async.series({
+    general: function (callback) {
+      self.log.writeln('\nConfigure WordPress Installation:\n'.underline.bold);
+      self.prompt(general_prompts, function (props) {
+        callback(null, props);
+      });
+    },
+    settings: function (callback) {
+      self.log.writeln('\nConfigure WordPress Setting:\n'.underline.bold);
+      self.prompt(setting_prompts, function (props) {
+        callback(null, props);
+      });
+    },
+    database: function (callback) {
+      self.log.writeln('\nConfigure WordPress Database Settings:\n'.underline.bold);
+      self.prompt(database_prompts, function (props) {
+        callback(null, props);
+      });
     }
+  }, function (err, results) {
+    var props = _.merge(results.general, results.settings, results.database);
 
     // Set the property to parse the gruntfile
     self.themeNameOriginal = props.themeName;
@@ -290,7 +314,7 @@ WordPressGenerator.prototype.askFor = function () {
     } else {
       cb()
     }
-  })
+  });
 };
 
 /**
